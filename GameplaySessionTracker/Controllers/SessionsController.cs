@@ -117,5 +117,58 @@ namespace GameplaySessionTracker.Controllers
             _sessionService.Delete(id);
             return NoContent();
         }
+
+        [HttpPost("{sessionId}/players/{playerId}")]
+        public IActionResult AddPlayerToSession(Guid sessionId, Guid playerId)
+        {
+            // Validate session exists
+            var session = _sessionService.GetById(sessionId);
+            if (session == null)
+            {
+                return NotFound($"Session with ID {sessionId} not found");
+            }
+
+            // Validate player exists
+            var player = _playerService.GetById(playerId);
+            if (player == null)
+            {
+                return NotFound($"Player with ID {playerId} not found");
+            }
+
+            // Check if player is already in the session
+            if (session.PlayerIds.Contains(playerId))
+            {
+                return BadRequest($"Player {playerId} is already in session {sessionId}");
+            }
+
+            // Add player to session
+            session.PlayerIds.Add(playerId);
+            _sessionService.Update(sessionId, session);
+
+            return Ok(new { message = $"Player {playerId} added to session {sessionId}" });
+        }
+
+        [HttpDelete("{sessionId}/players/{playerId}")]
+        public IActionResult RemovePlayerFromSession(Guid sessionId, Guid playerId)
+        {
+            // Validate session exists
+            var session = _sessionService.GetById(sessionId);
+            if (session == null)
+            {
+                return NotFound($"Session with ID {sessionId} not found");
+            }
+
+            // Check if player is in the session
+            if (!session.PlayerIds.Contains(playerId))
+            {
+                return BadRequest($"Player {playerId} is not in session {sessionId}");
+            }
+
+            // Remove player from session
+            session.PlayerIds.Remove(playerId);
+            _sessionService.Update(sessionId, session);
+
+            return Ok(new { message = $"Player {playerId} removed from session {sessionId}" });
+        }
     }
 }

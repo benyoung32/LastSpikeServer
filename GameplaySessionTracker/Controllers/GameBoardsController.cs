@@ -37,10 +37,7 @@ namespace GameplaySessionTracker.Controllers
         [HttpPost]
         public ActionResult<GameBoard> Create(GameBoard gameBoard)
         {
-            if (gameBoard.Id == Guid.Empty)
-            {
-                return BadRequest("ID is required");
-            }
+            gameBoard.Id = Guid.NewGuid();
             var createdGameBoard = _gameBoardService.Create(gameBoard);
             return CreatedAtAction(nameof(GetById), new { id = createdGameBoard.Id }, createdGameBoard);
         }

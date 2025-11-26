@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GameplaySessionTracker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b96da1726d311096157c0b69d93569d6d62791b4")]
 [assembly: System.Reflection.AssemblyProductAttribute("GameplaySessionTracker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GameplaySessionTracker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

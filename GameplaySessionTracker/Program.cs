@@ -6,9 +6,22 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<ISessionService, InMemorySessionService>();
-builder.Services.AddSingleton<IPlayerService, InMemoryPlayerService>();
-builder.Services.AddSingleton<IGameBoardService, InMemoryGameBoardService>();
+
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Server=localhost;Database=LastSpike;Integrated Security=true;TrustServerCertificate=true;";
+
+// Register repositories as Singletons with connection string
+builder.Services.AddSingleton<GameplaySessionTracker.Repositories.ISessionRepository>(
+    sp => new GameplaySessionTracker.Repositories.SessionRepository(connectionString));
+builder.Services.AddSingleton<GameplaySessionTracker.Repositories.IPlayerRepository>(
+    sp => new GameplaySessionTracker.Repositories.PlayerRepository(connectionString));
+builder.Services.AddSingleton<GameplaySessionTracker.Repositories.IGameBoardRepository>(
+    sp => new GameplaySessionTracker.Repositories.GameBoardRepository(connectionString));
+
+// Register services as Singletons
+builder.Services.AddSingleton<ISessionService, SessionService>();
+builder.Services.AddSingleton<IPlayerService, PlayerService>();
+builder.Services.AddSingleton<IGameBoardService, GameBoardService>();
 
 var app = builder.Build();
 

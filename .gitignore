@@ -1,2 +1,5 @@
 GameplaySessionTracker/bin/**
 GameplaySessionTracker/obj/**
+UnitTests/bin/**
+UnitTests/obj/**
+

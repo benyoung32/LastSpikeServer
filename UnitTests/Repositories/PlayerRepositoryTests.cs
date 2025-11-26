@@ -20,6 +20,32 @@ public class PlayerRepositoryTests
         Assert.NotNull(repository);
     }
 
+    [Fact]
+    public void Constructor_WithNullConnectionString_CreatesRepository()
+    {
+        // Arrange
+        string? connectionString = null;
+
+        // Act
+        var repository = new PlayerRepository(connectionString!);
+
+        // Assert
+        Assert.NotNull(repository);
+    }
+
+    [Fact]
+    public void Constructor_WithEmptyConnectionString_CreatesRepository()
+    {
+        // Arrange
+        var connectionString = string.Empty;
+
+        // Act
+        var repository = new PlayerRepository(connectionString);
+
+        // Assert
+        Assert.NotNull(repository);
+    }
+
     // Note: Testing SQL-based repositories requires either:
     // 1. Integration tests with a real database
     // 2. Mocking IDbConnection/IDbCommand (complex)

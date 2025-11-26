@@ -1,0 +1,16 @@
+{
+  "routes": [
+    ["Montreal", "Toronto"],
+    ["Montreal", "Sudbury"],
+    ["Toronto", "Sudbury"],
+    ["Sudbury", "Winnipeg"],
+    ["Winnipeg", "Regina"],
+    ["Winnipeg", "Saskatoon"],
+    ["Winnipeg", "Edmonton"],
+    ["Regina", "Saskatoon"],
+    ["Regina", "Calgary"],
+    ["Saskatoon", "Edmonton"],
+    ["Calgary", "Vancouver"],
+    ["Edmonton", "Vancouver"]
+  ]
+}

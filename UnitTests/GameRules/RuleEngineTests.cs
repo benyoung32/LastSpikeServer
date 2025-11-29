@@ -25,14 +25,14 @@ namespace GameplaySessionTracker.Tests.GameRules
             Assert.Empty(state.Routes);
             Assert.Empty(state.Properties);
             Assert.False(state.IsGameOver);
-            Assert.Equal(0, state.CurrentPID);
+            Assert.Equal(playerIDs[0], state.CurrentPlayerId);
 
             // Check all players have starting money and position 0
-            foreach (var player in state.Players)
+            foreach (var playerState in state.Players.Values)
             {
-                Assert.Equal(GameConstants.PlayerStartingMoney, player.Money);
-                Assert.Equal(0, player.BoardPosition);
-                Assert.False(player.SkipNextTurn);
+                Assert.Equal(GameConstants.PlayerStartingMoney, playerState.Money);
+                Assert.Equal(0, playerState.BoardPosition);
+                Assert.False(playerState.SkipNextTurn);
             }
         }
 
@@ -46,8 +46,8 @@ namespace GameplaySessionTracker.Tests.GameRules
             var state = RuleEngine.CreateNewGameState(playerIDs);
 
             // Assert
-            Assert.Equal(playerIDs[0], state.Players[0].PID);
-            Assert.Equal(playerIDs[1], state.Players[1].PID);
+            Assert.True(state.Players.ContainsKey(playerIDs[0]));
+            Assert.True(state.Players.ContainsKey(playerIDs[1]));
         }
 
         #endregion
@@ -65,8 +65,8 @@ namespace GameplaySessionTracker.Tests.GameRules
             var newState = RuleEngine.Move(state);
 
             // Assert
-            Assert.True(newState.Players[0].BoardPosition > 0);
-            Assert.True(newState.Players[0].BoardPosition < GameConstants.Spaces.Count);
+            Assert.True(newState.Players[playerID].BoardPosition > 0);
+            Assert.True(newState.Players[playerID].BoardPosition < GameConstants.Spaces.Count);
         }
 
         #endregion
@@ -78,20 +78,19 @@ namespace GameplaySessionTracker.Tests.GameRules
         {
             // Arrange
             var playerID = Guid.NewGuid();
-            var player = new PlayerState(playerID, 10000, 0, false);
             var state = new GameState(
-                new List<PlayerState> { player },
+                new Dictionary<Guid, PlayerState> { { playerID, new PlayerState(10000, 0, false) } },
                 new List<Route>(),
                 new List<Property>(),
                 false,
-                0
+                playerID
             );
 
             // Act
             var newState = RuleEngine.PassGo(state);
 
             // Assert
-            Assert.Equal(10000 + GameConstants.CPRSubsidy, newState.Players[0].Money);
+            Assert.Equal(10000 + GameConstants.CPRSubsidy, newState.Players[playerID].Money);
         }
 
         #endregion
@@ -102,13 +101,13 @@ namespace GameplaySessionTracker.Tests.GameRules
         public void BuyProperty_AddsPropertyAndDeductsMoney()
         {
             // Arrange
-            var player = new PlayerState(Guid.NewGuid(), 10000, 0, false);
+            var playerID = Guid.NewGuid();
             var state = new GameState(
-                new List<PlayerState> { player },
+                new Dictionary<Guid, PlayerState> { { playerID, new PlayerState(10000, 0, false) } },
                 new List<Route>(),
                 new List<Property>(),
                 false,
-                0
+                playerID
             );
             int cost = 5000;
 
@@ -117,30 +116,30 @@ namespace GameplaySessionTracker.Tests.GameRules
 
             // Assert
             Assert.Single(newState.Properties);
-            Assert.Equal(player.PID, newState.Properties[0].Owner_PID);
-            Assert.Equal(10000 - cost, newState.Players[0].Money);
+            Assert.Equal(playerID, newState.Properties[0].Owner_PID);
+            Assert.Equal(10000 - cost, newState.Players[playerID].Money);
         }
 
         [Fact]
         public void BuyProperty_WithEmptyDeck_ReturnsUnchangedState()
         {
             // Arrange
-            var player = new PlayerState(Guid.NewGuid(), 10000, 0, false);
+            var playerID = Guid.NewGuid();
             // Create a full deck (5 of each city = 45 properties)
             var properties = new List<Property>();
             foreach (City city in Enum.GetValues<City>())
             {
                 for (int i = 0; i < 5; i++)
                 {
-                    properties.Add(new Property(city, player.PID));
+                    properties.Add(new Property(city, playerID));
                 }
             }
             var state = new GameState(
-                new List<PlayerState> { player },
+                new Dictionary<Guid, PlayerState> { { playerID, new PlayerState(10000, 0, false) } },
                 new List<Route>(),
                 properties,
                 false,
-                0
+                playerID
             );
 
             // Act
@@ -148,20 +147,20 @@ namespace GameplaySessionTracker.Tests.GameRules
 
             // Assert
             Assert.Equal(45, newState.Properties.Count); // No new property added
-            Assert.Equal(10000, newState.Players[0].Money); // Money unchanged
+            Assert.Equal(10000, newState.Players[playerID].Money); // Money unchanged
         }
 
         [Fact]
         public void BuyProperty_WithZeroCost_DoesNotDeductMoney()
         {
             // Arrange
-            var player = new PlayerState(Guid.NewGuid(), 10000, 0, false);
+            var playerID = Guid.NewGuid();
             var state = new GameState(
-                new List<PlayerState> { player },
+                new Dictionary<Guid, PlayerState> { { playerID, new PlayerState(10000, 0, false) } },
                 new List<Route>(),
                 new List<Property>(),
                 false,
-                0
+                playerID
             );
 
             // Act
@@ -169,7 +168,7 @@ namespace GameplaySessionTracker.Tests.GameRules
 
             // Assert
             Assert.Single(newState.Properties);
-            Assert.Equal(10000, newState.Players[0].Money);
+            Assert.Equal(10000, newState.Players[playerID].Money);
         }
 
         #endregion
@@ -339,8 +338,8 @@ namespace GameplaySessionTracker.Tests.GameRules
             // Player 2 owns 1 Toronto property
             state.Properties.Add(new Property(City.Toronto, player2ID));
 
-            var initialMoney1 = state.Players[0].Money;
-            var initialMoney2 = state.Players[1].Money;
+            var initialMoney1 = state.Players[player1ID].Money;
+            var initialMoney2 = state.Players[player2ID].Money;
 
             // Act
             var newState = RuleEngine.FinishRoute(state, finishedRoute);
@@ -348,11 +347,11 @@ namespace GameplaySessionTracker.Tests.GameRules
             // Assert
             // Player 1 should get award for 2 Montreal properties
             var expectedAward1 = GameConstants.CityValues[City.Montreal][2] + GameConstants.CityValues[City.Toronto][0];
-            Assert.Equal(initialMoney1 + expectedAward1, newState.Players[0].Money);
+            Assert.Equal(initialMoney1 + expectedAward1, newState.Players[player1ID].Money);
 
             // Player 2 should get award for 1 Toronto property
             var expectedAward2 = GameConstants.CityValues[City.Montreal][0] + GameConstants.CityValues[City.Toronto][1];
-            Assert.Equal(initialMoney2 + expectedAward2, newState.Players[1].Money);
+            Assert.Equal(initialMoney2 + expectedAward2, newState.Players[player2ID].Money);
         }
 
         #endregion
@@ -455,16 +454,16 @@ namespace GameplaySessionTracker.Tests.GameRules
             var player1ID = Guid.NewGuid();
             var player2ID = Guid.NewGuid();
             var state = RuleEngine.CreateNewGameState(new List<Guid> { player1ID, player2ID });
-            state = state with { CurrentPID = 1 }; // Set current player to player 2
+            state = state with { CurrentPlayerId = player2ID }; // Set current player to player 2
 
-            var initialMoney = state.Players[1].Money;
+            var initialMoney = state.Players[player2ID].Money;
 
             // Act
             var newState = RuleEngine.ProcessGameOver(state);
 
             // Assert
-            Assert.Equal(initialMoney + GameConstants.LastSpikeBonus, newState.Players[1].Money);
-            Assert.Equal(state.Players[0].Money, newState.Players[0].Money); // Other player unchanged
+            Assert.Equal(initialMoney + GameConstants.LastSpikeBonus, newState.Players[player2ID].Money);
+            Assert.Equal(state.Players[player1ID].Money, newState.Players[player1ID].Money); // Other player unchanged
         }
 
         #endregion
@@ -476,22 +475,21 @@ namespace GameplaySessionTracker.Tests.GameRules
         {
             // Arrange
             var playerID = Guid.NewGuid();
-            var player = new PlayerState(playerID, 10000, 0, false); // Position 0 is Go
             var state = new GameState(
-                new List<PlayerState> { player },
+                new Dictionary<Guid, PlayerState> { { playerID, new PlayerState(10000, 0, false) } }, // Position 0 is Go
                 new List<Route>(),
                 new List<Property>(),
                 false,
-                0
+                playerID
             );
 
-            var initialMoney = state.Players[0].Money;
+            var initialMoney = state.Players[playerID].Money;
 
             // Act
             var newState = RuleEngine.LandOnSpace(state);
 
             // Assert
-            Assert.Equal(initialMoney + GameConstants.CPRSubsidy, newState.Players[0].Money);
+            Assert.Equal(initialMoney + GameConstants.CPRSubsidy, newState.Players[playerID].Money);
         }
 
         [Fact]
@@ -499,20 +497,19 @@ namespace GameplaySessionTracker.Tests.GameRules
         {
             // Arrange
             var playerID = Guid.NewGuid();
-            var player = new PlayerState(playerID, 10000, 1, false); // Position 1 is Track
             var state = new GameState(
-                new List<PlayerState> { player },
+                new Dictionary<Guid, PlayerState> { { playerID, new PlayerState(10000, 1, false) } }, // Position 1 is Track
                 new List<Route>(),
                 new List<Property>(),
                 false,
-                0
+                playerID
             );
 
             // Act
             var newState = RuleEngine.LandOnSpace(state);
 
             // Assert
-            Assert.Equal(state.Players[0].Money, newState.Players[0].Money);
+            Assert.Equal(state.Players[playerID].Money, newState.Players[playerID].Money);
         }
 
         [Fact]
@@ -520,13 +517,12 @@ namespace GameplaySessionTracker.Tests.GameRules
         {
             // Arrange
             var playerID = Guid.NewGuid();
-            var player = new PlayerState(playerID, 10000, 999, false);
             var state = new GameState(
-                new List<PlayerState> { player },
+                new Dictionary<Guid, PlayerState> { { playerID, new PlayerState(10000, 999, false) } },
                 new List<Route>(),
                 new List<Property>(),
                 false,
-                0
+                playerID
             );
 
             // Act
@@ -551,7 +547,7 @@ namespace GameplaySessionTracker.Tests.GameRules
             var newState = RuleEngine.EndOfTrack(state);
 
             // Assert
-            Assert.True(newState.Players[0].SkipNextTurn);
+            Assert.True(newState.Players[playerID].SkipNextTurn);
         }
 
         #endregion
@@ -566,14 +562,14 @@ namespace GameplaySessionTracker.Tests.GameRules
             var player2ID = Guid.NewGuid();
             var player3ID = Guid.NewGuid();
 
-            var players = new List<PlayerState>
+            var players = new Dictionary<Guid, PlayerState>
             {
-                new PlayerState(player1ID, 50000, 0, false),
-                new PlayerState(player2ID, 100000, 0, false),
-                new PlayerState(player3ID, 75000, 0, false)
+                { player1ID, new PlayerState(50000, 0, false) },
+                { player2ID, new PlayerState(100000, 0, false) },
+                { player3ID, new PlayerState(75000, 0, false) }
             };
 
-            var state = new GameState(players, new List<Route>(), new List<Property>(), false, 0);
+            var state = new GameState(players, new List<Route>(), new List<Property>(), false, player1ID);
 
             // Act
             var ranking = RuleEngine.GetRanking(state);
@@ -592,13 +588,13 @@ namespace GameplaySessionTracker.Tests.GameRules
             var player1ID = Guid.NewGuid();
             var player2ID = Guid.NewGuid();
 
-            var players = new List<PlayerState>
+            var players = new Dictionary<Guid, PlayerState>
             {
-                new PlayerState(player1ID, 50000, 0, false),
-                new PlayerState(player2ID, 50000, 0, false)
+                { player1ID, new PlayerState(50000, 0, false) },
+                { player2ID, new PlayerState(50000, 0, false) }
             };
 
-            var state = new GameState(players, new List<Route>(), new List<Property>(), false, 0);
+            var state = new GameState(players, new List<Route>(), new List<Property>(), false, player1ID);
 
             // Act
             var ranking = RuleEngine.GetRanking(state);
@@ -631,10 +627,10 @@ namespace GameplaySessionTracker.Tests.GameRules
             Assert.Equal(originalState.Routes.Count, deserialized.Routes.Count);
             Assert.Equal(originalState.Properties.Count, deserialized.Properties.Count);
             Assert.Equal(originalState.IsGameOver, deserialized.IsGameOver);
-            Assert.Equal(originalState.CurrentPID, deserialized.CurrentPID);
+            Assert.Equal(originalState.CurrentPlayerId, deserialized.CurrentPlayerId);
 
-            Assert.Equal(originalState.Players[0].PID, deserialized.Players[0].PID);
-            Assert.Equal(originalState.Players[0].Money, deserialized.Players[0].Money);
+            Assert.True(deserialized.Players.ContainsKey(playerID));
+            Assert.Equal(originalState.Players[playerID].Money, deserialized.Players[playerID].Money);
             Assert.Equal(originalState.Routes[0].NumTracks, deserialized.Routes[0].NumTracks);
             Assert.Equal(originalState.Properties[0].City, deserialized.Properties[0].City);
         }

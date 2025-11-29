@@ -4,6 +4,7 @@ using GameplaySessionTracker.Models;
 using GameplaySessionTracker.Repositories;
 using Microsoft.AspNetCore.SignalR;
 using GameplaySessionTracker.Hubs;
+using GameplaySessionTracker.GameRules;
 
 namespace GameplaySessionTracker.Services
 {
@@ -37,6 +38,15 @@ namespace GameplaySessionTracker.Services
         public async Task Delete(Guid id)
         {
             repository.Delete(id);
+        }
+
+        public async Task PlayerAction(Guid id, GameAction action)
+        {
+            var sessionGameBoard = await GetById(id);
+            var gameState = RuleEngine.DeserializeGameState(sessionGameBoard.Data);
+            gameState = RuleEngine.ApplyAction(gameState, action);
+            sessionGameBoard.Data = RuleEngine.SerializeGameState(gameState);
+            await Update(id, sessionGameBoard);
         }
     }
 }

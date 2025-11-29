@@ -11,5 +11,6 @@ namespace GameplaySessionTracker.Services
         Task<SessionGameBoard> Create(SessionGameBoard sessionGameBoard);
         Task Update(Guid id, SessionGameBoard sessionGameBoard);
         Task Delete(Guid id);
+        Task PlayerAction(Guid id, GameAction action);
     }
 }

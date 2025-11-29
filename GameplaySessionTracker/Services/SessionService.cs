@@ -5,39 +5,32 @@ using GameplaySessionTracker.Repositories;
 
 namespace GameplaySessionTracker.Services
 {
-    public class SessionService : ISessionService
+    public class SessionService(ISessionRepository repository) : ISessionService
     {
-        private readonly ISessionRepository _repository;
-
-        public SessionService(ISessionRepository repository)
-        {
-            _repository = repository;
-        }
-
         public IEnumerable<SessionData> GetAll()
         {
-            return _repository.GetAll();
+            return repository.GetAll();
         }
 
         public SessionData? GetById(Guid id)
         {
-            return _repository.GetById(id);
+            return repository.GetById(id);
         }
 
         public SessionData Create(SessionData session)
         {
-            _repository.Add(session);
+            repository.Add(session);
             return session;
         }
 
         public void Update(Guid id, SessionData session)
         {
-            _repository.Update(session);
+            repository.Update(session);
         }
 
         public void Delete(Guid id)
         {
-            _repository.Delete(id);
+            repository.Delete(id);
         }
     }
 }

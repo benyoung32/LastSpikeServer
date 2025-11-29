@@ -1,23 +1,17 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text.Json;
 using GameplaySessionTracker.Models;
-using Microsoft.AspNetCore.StaticAssets;
 
 namespace GameplaySessionTracker.GameRules
 {
     public record GameState(
-        List<PlayerState> Players, // the order of this list determines turn order
+        Dictionary<Guid, PlayerState> Players, // the order of this list determines turn order
         List<Route> Routes, // how much track on each route
         List<Property> Properties, // "deck" of properties 
         bool IsGameOver,
-        int CurrentPID // which player's turn it is
+        Guid CurrentPlayerId // which player's turn it is
     );
 
     public record PlayerState(
-            Guid PID, // the player's Guid corresponding to the Session
             int Money,
             int BoardPosition, // value from 0->len(Spaces)  
             bool SkipNextTurn // if true, the player will skip their next turn
@@ -55,12 +49,17 @@ namespace GameplaySessionTracker.GameRules
         /// <returns></returns>
         public static GameState CreateNewGameState(List<Guid> playerIDs)
         {
-            return new GameState(
-            [.. playerIDs.Select(pid => new PlayerState(pid, GameConstants.PlayerStartingMoney, 0, false))],
+            var state = new GameState(
+            new Dictionary<Guid, PlayerState>(),
             new List<Route>(),
             new List<Property>(),
             false,
-            0);
+            playerIDs[0]);
+            foreach (var p in playerIDs)
+            {
+                state.Players.Add(p, new PlayerState(GameConstants.PlayerStartingMoney, 0, false));
+            }
+            return state;
         }
 
         /// <summary>
@@ -71,14 +70,14 @@ namespace GameplaySessionTracker.GameRules
         public static GameState Move(GameState state)
         {
             var diceRoll = DiceRoll();
-            var currentPlayer = state.Players[state.CurrentPID];
+            var currentPlayer = state.Players[state.CurrentPlayerId];
             var newBoardPosition = currentPlayer.BoardPosition + diceRoll;
             if (newBoardPosition >= GameConstants.Spaces.Count)
             {
                 state = PassGo(state);
                 newBoardPosition -= GameConstants.Spaces.Count;
             }
-            state.Players[state.CurrentPID] = currentPlayer with
+            state.Players[state.CurrentPlayerId] = currentPlayer with
             {
                 BoardPosition = newBoardPosition
             };
@@ -88,9 +87,9 @@ namespace GameplaySessionTracker.GameRules
         // the player that passes go gets CPRSubsidy (5k)
         public static GameState PassGo(GameState state)
         {
-            state.Players[state.CurrentPID] = state.Players[state.CurrentPID] with
+            state.Players[state.CurrentPlayerId] = state.Players[state.CurrentPlayerId] with
             {
-                Money = state.Players[state.CurrentPID].Money + GameConstants.CPRSubsidy
+                Money = state.Players[state.CurrentPlayerId].Money + GameConstants.CPRSubsidy
             };
             return state;
         }
@@ -129,10 +128,10 @@ namespace GameplaySessionTracker.GameRules
 
             // Update the current player's money by subtracting the cost
             // and add the new property to the game state
-            state.Properties.Add(new Property(selectedCity, state.Players[state.CurrentPID].PID));
-            state.Players[state.CurrentPID] = state.Players[state.CurrentPID] with
+            state.Properties.Add(new Property(selectedCity, state.CurrentPlayerId));
+            state.Players[state.CurrentPlayerId] = state.Players[state.CurrentPlayerId] with
             {
-                Money = state.Players[state.CurrentPID].Money - cost
+                Money = state.Players[state.CurrentPlayerId].Money - cost
             };
             return state;
         }
@@ -180,7 +179,6 @@ namespace GameplaySessionTracker.GameRules
             {
                 return state; // do nothing
             }
-
             var route = state.Routes.Find(route => route.CityPair == target) ?? new Route(target, 0);
             bool firstTrack = false;
             // if this is the first time track has been added to this route, now add it to the list
@@ -189,6 +187,7 @@ namespace GameplaySessionTracker.GameRules
                 state.Routes.Add(route);
                 firstTrack = true;
             }
+            var targetRouteIndex = state.Routes.FindIndex(route => route.CityPair == target);
 
             // is this route already full?
             if (route.NumTracks == 4)
@@ -196,13 +195,9 @@ namespace GameplaySessionTracker.GameRules
                 return state; // do nothing
             }
 
-            state = state with
+            state.Routes[targetRouteIndex] = route with
             {
-                Routes = [.. state.Routes.Select(
-                        route => route with {
-                            NumTracks = route.CityPair == target ?
-                            route.NumTracks + 1 : route.NumTracks
-                        })]
+                NumTracks = route.NumTracks + 1
             };
 
             // if this was the first track laid, give the current player a new property
@@ -247,25 +242,25 @@ namespace GameplaySessionTracker.GameRules
             }
 
             foreach (var city in finished)
-                foreach (var player in state.Players)
+                foreach (var playerId in state.Players.Keys)
                 {
-                    if (!awards.ContainsKey(player.PID))
-                        awards[player.PID] = 0;
+                    if (!awards.ContainsKey(playerId))
+                        awards[playerId] = 0;
 
                     int count = 0;
-                    if (num_owned.ContainsKey(player.PID) && num_owned[player.PID].ContainsKey(city))
-                        count = num_owned[player.PID][city];
+                    if (num_owned.ContainsKey(playerId) && num_owned[playerId].ContainsKey(city))
+                        count = num_owned[playerId][city];
 
-                    awards[player.PID] += GameConstants.CityValues[city][count];
+                    awards[playerId] += GameConstants.CityValues[city][count];
                 }
 
-            state = state with
+            foreach (var playerId in awards.Keys)
             {
-                Players = [.. state.Players.Select(
-                        player => player with {
-                            Money = player.Money + awards.GetValueOrDefault(player.PID)
-                        })]
-            };
+                state.Players[playerId] = state.Players[playerId] with
+                {
+                    Money = state.Players[playerId].Money + awards[playerId]
+                };
+            }
 
             if (IsGameOver(state))
             {
@@ -336,13 +331,13 @@ namespace GameplaySessionTracker.GameRules
         /// <returns></returns>
         public static GameState ProcessGameOver(GameState state)
         {
+            // the player that finishes the game gets bonus
+            state.Players[state.CurrentPlayerId] = state.Players[state.CurrentPlayerId] with
+            {
+                Money = state.Players[state.CurrentPlayerId].Money + GameConstants.LastSpikeBonus
+            };
             return state with
             {
-                Players = [.. state.Players.Select(
-                        player => player with { // the player that finishes the game gets 10k bonus
-                            Money = player.PID == state.Players[state.CurrentPID].PID ?
-                            player.Money + GameConstants.LastSpikeBonus : player.Money
-                        })],
                 IsGameOver = true
             };
         }
@@ -350,7 +345,7 @@ namespace GameplaySessionTracker.GameRules
         // based on the current player's position, determine what happens
         public static GameState LandOnSpace(GameState state)
         {
-            var currentPlayer = state.Players[state.CurrentPID];
+            var currentPlayer = state.Players[state.CurrentPlayerId];
             if (currentPlayer.BoardPosition > GameConstants.Spaces.Count - 1)
                 return state;
             var landedOnType = GameConstants.Spaces[currentPlayer.BoardPosition].Type;
@@ -375,21 +370,24 @@ namespace GameplaySessionTracker.GameRules
 
         public static GameState EndOfTrack(GameState state)
         {
-            state.Players[state.CurrentPID] = state.Players[state.CurrentPID] with
+            state.Players[state.CurrentPlayerId] = state.Players[state.CurrentPlayerId] with
             {
                 SkipNextTurn = true
             };
             return state;
         }
 
-        /// <summary>
-        /// Returns a list of player IDs in order of their money amount
-        /// </summary>
-        /// <param name="state"></param>
-        /// <returns></returns>
-        public static List<Guid> GetRanking(GameState state)
+        public static List<GameAction> GetValidActions(GameState state, Guid playerId)
         {
-            return [.. state.Players.OrderByDescending(player => player.Money).Select(player => player.PID)];
+            if (state.CurrentPlayerId != playerId)
+                return new List<GameAction>();
+
+            return new List<GameAction>
+            {
+                new GameAction { Name = ActionType.Roll, PlayerId = playerId },
+                new GameAction { Name = ActionType.Accept, PlayerId = playerId },
+                new GameAction { Name = ActionType.Pass, PlayerId = playerId }
+            };
         }
 
         private static int DiceRoll()

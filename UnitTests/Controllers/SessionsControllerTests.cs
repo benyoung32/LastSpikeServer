@@ -11,14 +11,14 @@ namespace GameplaySessionTracker.Tests.Controllers;
 public class SessionsControllerTests
 {
     private readonly Mock<ISessionService> _mockService;
-    private readonly Mock<ISessionGameBoardService> _mockBoardService;
+    private readonly Mock<IGameBoardService> _mockBoardService;
     private readonly Mock<IPlayerService> _mockPlayerService;
     private readonly SessionsController _controller;
 
     public SessionsControllerTests()
     {
         _mockService = new Mock<ISessionService>();
-        _mockBoardService = new Mock<ISessionGameBoardService>();
+        _mockBoardService = new Mock<IGameBoardService>();
         _mockPlayerService = new Mock<IPlayerService>();
         _controller = new SessionsController(_mockService.Object, _mockBoardService.Object, _mockPlayerService.Object);
     }
@@ -56,7 +56,7 @@ public class SessionsControllerTests
     public async Task Create_Valid_ReturnsCreated()
     {
         var session = new SessionData { BoardId = Guid.NewGuid(), PlayerIds = new List<Guid>() };
-        _mockBoardService.Setup(s => s.GetById(session.BoardId)).ReturnsAsync(new SessionGameBoard { Id = session.BoardId });
+        _mockBoardService.Setup(s => s.GetById(session.BoardId)).ReturnsAsync(new GameBoard { Id = session.BoardId });
         _mockService.Setup(s => s.Create(It.IsAny<SessionData>())).ReturnsAsync(new SessionData { Id = Guid.NewGuid() });
         var result = await _controller.Create(session);
         Assert.IsType<CreatedAtActionResult>(result.Result);
@@ -99,7 +99,7 @@ public class SessionsControllerTests
         var id = Guid.NewGuid();
         var session = new SessionData { Id = id, BoardId = Guid.NewGuid() };
         _mockService.Setup(s => s.GetById(id)).ReturnsAsync(session);
-        _mockBoardService.Setup(s => s.GetById(session.BoardId)).ReturnsAsync(new SessionGameBoard { Id = session.BoardId });
+        _mockBoardService.Setup(s => s.GetById(session.BoardId)).ReturnsAsync(new GameBoard { Id = session.BoardId });
         var result = await _controller.Update(id, session);
         Assert.IsType<NoContentResult>(result);
     }
@@ -131,7 +131,7 @@ public class SessionsControllerTests
         var id = Guid.NewGuid();
         var session = new SessionData { Id = id, BoardId = Guid.NewGuid() };
         _mockService.Setup(s => s.GetById(id)).ReturnsAsync(session);
-        _mockBoardService.Setup(s => s.GetById(session.BoardId)).ReturnsAsync((SessionGameBoard?)null);
+        _mockBoardService.Setup(s => s.GetById(session.BoardId)).ReturnsAsync((GameBoard?)null);
         var result = await _controller.Update(id, session);
         Assert.IsType<BadRequestObjectResult>(result);
     }

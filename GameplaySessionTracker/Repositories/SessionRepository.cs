@@ -24,14 +24,6 @@ namespace GameplaySessionTracker.Repositories
             using var connection = CreateConnection();
             var sessions = (await connection.QueryAsync<SessionData>("SELECT * FROM Sessions")).ToList();
 
-            // Load PlayerIds for each session
-            foreach (var session in sessions)
-            {
-                session.PlayerIds = (await connection.QueryAsync<Guid>(
-                    "SELECT PlayerId FROM SessionPlayers WHERE SessionId = @SessionId",
-                    new { SessionId = session.Id })).ToList();
-            }
-
             return sessions;
         }
 
@@ -41,14 +33,6 @@ namespace GameplaySessionTracker.Repositories
             var session = await connection.QueryFirstOrDefaultAsync<SessionData>(
                 "SELECT * FROM Sessions WHERE Id = @Id",
                 new { Id = id });
-
-            if (session != null)
-            {
-                session.PlayerIds = (await connection.QueryAsync<Guid>(
-                    "SELECT PlayerId FROM SessionPlayers WHERE SessionId = @SessionId",
-                    new { SessionId = id })).ToList();
-            }
-
             return session;
         }
 
@@ -64,27 +48,14 @@ namespace GameplaySessionTracker.Repositories
         {
             using var connection = CreateConnection();
             await connection.ExecuteAsync(
-                "UPDATE Sessions SET Description = @Description, BoardId = @BoardId, StartTime = @StartTime, EndTime = @EndTime WHERE Id = @Id",
+                "UPDATE Sessions SET Description = @Description, BoardId = @BoardId, StartTime = @StartTime, EndTime = @EndTime, PlayerIds = @PlayerIds WHERE Id = @Id",
                 session);
 
-            // Remove existing player associations
-            await connection.ExecuteAsync(
-                "DELETE FROM SessionPlayers WHERE SessionId = @SessionId",
-                new { SessionId = session.Id });
-
-            // Add new player associations
-            foreach (var playerId in session.PlayerIds)
-            {
-                await connection.ExecuteAsync(
-                    "INSERT INTO SessionPlayers (SessionId, PlayerId) VALUES (@SessionId, @PlayerId)",
-                    new { SessionId = session.Id, PlayerId = playerId });
-            }
         }
 
         public async Task Delete(Guid id)
         {
             using var connection = CreateConnection();
-            // SessionPlayers will be deleted automatically due to ON DELETE CASCADE
             await connection.ExecuteAsync("DELETE FROM Sessions WHERE Id = @Id", new { Id = id });
         }
     }

@@ -7,17 +7,17 @@ using Xunit;
 namespace GameplaySessionTracker.Tests.Services;
 
 public class SessionGameBoardServiceTests(
-        SessionGameBoardService service,
-        Mock<ISessionGameBoardRepository> mockRepository)
+        GameBoardService service,
+        Mock<IGameBoardRepository> mockRepository)
 {
     [Fact]
     public void GetAll_ReturnsAllSessionGameBoards()
     {
         // Arrange
-        var sessionGameBoards = new List<SessionGameBoard>
+        var sessionGameBoards = new List<GameBoard>
         {
-            new SessionGameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "Data1" },
-            new SessionGameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "Data2" }
+            new GameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "Data1" },
+            new GameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "Data2" }
         };
         mockRepository.Setup(r => r.GetAll()).Returns(sessionGameBoards);
 
@@ -34,7 +34,7 @@ public class SessionGameBoardServiceTests(
     {
         // Arrange
         var id = Guid.NewGuid();
-        var sgb = new SessionGameBoard { Id = id, SessionId = Guid.NewGuid(), Data = "Test" };
+        var sgb = new GameBoard { Id = id, SessionId = Guid.NewGuid(), Data = "Test" };
         mockRepository.Setup(r => r.GetById(id)).Returns(sgb);
 
         // Act
@@ -51,7 +51,7 @@ public class SessionGameBoardServiceTests(
     {
         // Arrange
         var id = Guid.NewGuid();
-        mockRepository.Setup(r => r.GetById(id)).Returns((SessionGameBoard?)null);
+        mockRepository.Setup(r => r.GetById(id)).Returns((GameBoard?)null);
 
         // Act
         var result = service.GetById(id);
@@ -65,7 +65,7 @@ public class SessionGameBoardServiceTests(
     public void Create_ValidSessionGameBoard_CallsRepositoryAdd()
     {
         // Arrange
-        var sgb = new SessionGameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "New" };
+        var sgb = new GameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "New" };
 
         // Act
         var result = service.Create(sgb).Result;
@@ -80,7 +80,7 @@ public class SessionGameBoardServiceTests(
     {
         // Arrange
         var id = Guid.NewGuid();
-        var sgb = new SessionGameBoard { Id = id, SessionId = Guid.NewGuid(), Data = "Updated" };
+        var sgb = new GameBoard { Id = id, SessionId = Guid.NewGuid(), Data = "Updated" };
         mockRepository.Setup(r => r.GetById(id)).Returns(sgb);
 
         // Act

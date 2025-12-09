@@ -11,11 +11,11 @@ BEGIN
 END
 GO
 
--- IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Players')
--- BEGIN
---     DROP TABLE Players;
--- END
--- GO
+IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Players')
+BEGIN
+    DROP TABLE Players;
+END
+GO
 
 -- IF EXISTS (SELECT * FROM sys.tables WHERE name = 'GameBoards')
 -- BEGIN
@@ -41,13 +41,12 @@ GO
 -- );
 -- GO
 
--- -- Create Players table
--- CREATE TABLE Players (
---     Id UNIQUEIDENTIFIER PRIMARY KEY,
---     Name NVARCHAR(255) NOT NULL,
---     Alias NVARCHAR(255) NOT NULL
--- );
--- GO
+-- Create Players table
+CREATE TABLE Players (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    Name NVARCHAR(255) NOT NULL,
+);
+GO
 
 -- Create Sessions table
 CREATE TABLE Sessions (

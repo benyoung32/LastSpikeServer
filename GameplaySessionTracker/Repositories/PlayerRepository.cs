@@ -7,16 +7,10 @@ using Microsoft.Data.SqlClient;
 
 namespace GameplaySessionTracker.Repositories
 {
-    public class PlayerRepository : IPlayerRepository
+    public class PlayerRepository(string connectionString) : IPlayerRepository
     {
-        private readonly string _connectionString;
 
-        public PlayerRepository(string connectionString)
-        {
-            _connectionString = connectionString;
-        }
-
-        private IDbConnection CreateConnection() => new SqlConnection(_connectionString);
+        private IDbConnection CreateConnection() => new SqlConnection(connectionString);
 
         public IEnumerable<Player> GetAll()
         {
@@ -36,7 +30,7 @@ namespace GameplaySessionTracker.Repositories
         {
             using var connection = CreateConnection();
             connection.Execute(
-                "INSERT INTO Players (Id, Name, Alias) VALUES (@Id, @Name, @Alias)",
+                "INSERT INTO Players (Id, Name) VALUES (@Id, @Name)",
                 player);
         }
 
@@ -44,7 +38,7 @@ namespace GameplaySessionTracker.Repositories
         {
             using var connection = CreateConnection();
             connection.Execute(
-                "UPDATE Players SET Name = @Name, Alias = @Alias WHERE Id = @Id",
+                "UPDATE Players SET Name = @Name WHERE Id = @Id",
                 player);
         }
 

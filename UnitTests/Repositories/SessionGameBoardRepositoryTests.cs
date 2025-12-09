@@ -10,7 +10,7 @@ public class SessionGameBoardRepositoryTests
     public void GetAll_InitiallyEmpty_ReturnsEmptyCollection()
     {
         // Arrange
-        var repository = new SessionGameBoardRepository();
+        var repository = new GameBoardRepository();
 
         // Act
         var result = repository.GetAll();
@@ -24,8 +24,8 @@ public class SessionGameBoardRepositoryTests
     public void Add_AddsSessionGameBoard_CanBeRetrieved()
     {
         // Arrange
-        var repository = new SessionGameBoardRepository();
-        var sessionGameBoard = new SessionGameBoard
+        var repository = new GameBoardRepository();
+        var sessionGameBoard = new GameBoard
         {
             Id = Guid.NewGuid(),
             SessionId = Guid.NewGuid(),
@@ -47,7 +47,7 @@ public class SessionGameBoardRepositoryTests
     public void GetById_NonExistent_ReturnsNull()
     {
         // Arrange
-        var repository = new SessionGameBoardRepository();
+        var repository = new GameBoardRepository();
 
         // Act
         var result = repository.GetById(Guid.NewGuid());
@@ -60,8 +60,8 @@ public class SessionGameBoardRepositoryTests
     public void Update_ExistingSessionGameBoard_UpdatesData()
     {
         // Arrange
-        var repository = new SessionGameBoardRepository();
-        var sessionGameBoard = new SessionGameBoard
+        var repository = new GameBoardRepository();
+        var sessionGameBoard = new GameBoard
         {
             Id = Guid.NewGuid(),
             SessionId = Guid.NewGuid(),
@@ -83,8 +83,8 @@ public class SessionGameBoardRepositoryTests
     public void Update_NonExistent_DoesNothing()
     {
         // Arrange
-        var repository = new SessionGameBoardRepository();
-        var sessionGameBoard = new SessionGameBoard
+        var repository = new GameBoardRepository();
+        var sessionGameBoard = new GameBoard
         {
             Id = Guid.NewGuid(),
             SessionId = Guid.NewGuid(),
@@ -103,8 +103,8 @@ public class SessionGameBoardRepositoryTests
     public void Delete_ExistingSessionGameBoard_RemovesFromCollection()
     {
         // Arrange
-        var repository = new SessionGameBoardRepository();
-        var sessionGameBoard = new SessionGameBoard
+        var repository = new GameBoardRepository();
+        var sessionGameBoard = new GameBoard
         {
             Id = Guid.NewGuid(),
             SessionId = Guid.NewGuid(),
@@ -124,7 +124,7 @@ public class SessionGameBoardRepositoryTests
     public void Delete_NonExistent_DoesNothing()
     {
         // Arrange
-        var repository = new SessionGameBoardRepository();
+        var repository = new GameBoardRepository();
 
         // Act & Assert (no exception should be thrown)
         repository.Delete(Guid.NewGuid());
@@ -134,9 +134,9 @@ public class SessionGameBoardRepositoryTests
     public void GetAll_MultipleItems_ReturnsAll()
     {
         // Arrange
-        var repository = new SessionGameBoardRepository();
-        var sgb1 = new SessionGameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "Data1" };
-        var sgb2 = new SessionGameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "Data2" };
+        var repository = new GameBoardRepository();
+        var sgb1 = new GameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "Data1" };
+        var sgb2 = new GameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "Data2" };
 
         // Act
         repository.Add(sgb1);

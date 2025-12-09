@@ -2,7 +2,7 @@ using System;
 
 namespace GameplaySessionTracker.Models
 {
-    public class SessionGameBoard
+    public class GameBoard
     {
         public Guid Id { get; set; }
         public Guid SessionId { get; set; }

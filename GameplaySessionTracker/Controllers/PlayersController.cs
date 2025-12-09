@@ -9,25 +9,18 @@ namespace GameplaySessionTracker.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PlayersController : ControllerBase
+    public class PlayersController(IPlayerService playerService) : ControllerBase
     {
-        private readonly IPlayerService _playerService;
-
-        public PlayersController(IPlayerService playerService)
-        {
-            _playerService = playerService;
-        }
-
         [HttpGet]
         public ActionResult<IEnumerable<Player>> GetAll()
         {
-            return Ok(_playerService.GetAll());
+            return Ok(playerService.GetAll());
         }
 
         [HttpGet("{id}")]
         public ActionResult<Player> GetById(Guid id)
         {
-            var player = _playerService.GetById(id);
+            var player = playerService.GetById(id);
             if (player == null)
             {
                 return NotFound();
@@ -39,21 +32,7 @@ namespace GameplaySessionTracker.Controllers
         public ActionResult<Player> Create(Player player)
         {
             player.Id = Guid.NewGuid();
-
-            // Check for duplicate Name
-            var existingPlayers = _playerService.GetAll();
-            if (existingPlayers.Any(p => p.Name.Equals(player.Name, StringComparison.OrdinalIgnoreCase)))
-            {
-                return BadRequest($"A player with the name '{player.Name}' already exists");
-            }
-
-            // Check for duplicate Alias
-            if (existingPlayers.Any(p => p.Alias.Equals(player.Alias, StringComparison.OrdinalIgnoreCase)))
-            {
-                return BadRequest($"A player with the alias '{player.Alias}' already exists");
-            }
-
-            var createdPlayer = _playerService.Create(player);
+            var createdPlayer = playerService.Create(player);
             return CreatedAtAction(nameof(GetById), new { id = createdPlayer.Id }, createdPlayer);
         }
 
@@ -65,40 +44,28 @@ namespace GameplaySessionTracker.Controllers
                 return BadRequest("ID mismatch");
             }
 
-            var existing = _playerService.GetById(id);
+            var existing = playerService.GetById(id);
             if (existing == null)
             {
                 return NotFound();
             }
 
-            // Check for duplicate Name (excluding current player)
-            var existingPlayers = _playerService.GetAll();
-            if (existingPlayers.Any(p => p.Id != id && p.Name.Equals(player.Name, StringComparison.OrdinalIgnoreCase)))
-            {
-                return BadRequest($"A player with the name '{player.Name}' already exists");
-            }
-
-            // Check for duplicate Alias (excluding current player)
-            if (existingPlayers.Any(p => p.Id != id && p.Alias.Equals(player.Alias, StringComparison.OrdinalIgnoreCase)))
-            {
-                return BadRequest($"A player with the alias '{player.Alias}' already exists");
-            }
-
-            _playerService.Update(id, player);
+            playerService.Update(id, player);
             return NoContent();
         }
 
         [HttpDelete("{id}")]
         public IActionResult Delete(Guid id)
         {
-            var existing = _playerService.GetById(id);
+            var existing = playerService.GetById(id);
             if (existing == null)
             {
                 return NotFound();
             }
 
-            _playerService.Delete(id);
+            playerService.Delete(id);
             return NoContent();
         }
+
     }
 }

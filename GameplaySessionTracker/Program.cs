@@ -19,13 +19,13 @@ builder.Services.AddSignalR();
 // Add CORS - environment-aware configuration
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.SetIsOriginAllowed(_ => true)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
-    });
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:3000")
+                   .AllowAnyMethod()
+                   .AllowAnyHeader();
+        });
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -36,16 +36,13 @@ builder.Services.AddSingleton<ISessionRepository>(
     sp => new SessionRepository(connectionString));
 builder.Services.AddSingleton<IPlayerRepository>(
     sp => new PlayerRepository(connectionString));
-// builder.Services.AddSingleton<IGameBoardRepository>(
-//     sp => new GameBoardRepository(connectionString));
+builder.Services.AddSingleton<IGameBoardRepository, GameBoardRepository>();
 
 // Register services as Singletons
 builder.Services.AddSingleton<ISessionService, SessionService>();
 builder.Services.AddSingleton<IPlayerService, PlayerService>();
 // builder.Services.AddSingleton<IGameBoardService, GameBoardService>();
-builder.Services.AddSingleton<ISessionGameBoardRepository, SessionGameBoardRepository>();
-builder.Services.AddSingleton<ISessionGameBoardService, SessionGameBoardService>();
-builder.Services.AddSingleton<IMetricsService, MetricsService>();
+builder.Services.AddSingleton<IGameBoardService, GameBoardService>();
 builder.Services.AddSignalR();
 
 var app = builder.Build();
@@ -58,7 +55,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseCors("AllowAll");
 app.UseStaticFiles();
 
 app.UseAuthorization();

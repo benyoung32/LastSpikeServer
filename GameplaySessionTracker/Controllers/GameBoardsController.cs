@@ -7,21 +7,21 @@ namespace GameplaySessionTracker.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class SessionGameBoardsController(
-            ISessionGameBoardService sessionGameBoardService,
+    public class GameBoardsController(
+            IGameBoardService gameBoardService,
             ISessionService sessionService)
         : ControllerBase
     {
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<SessionGameBoard>>> GetAll()
+        public async Task<ActionResult<IEnumerable<GameBoard>>> GetAll()
         {
-            return Ok(sessionGameBoardService.GetAll());
+            return Ok(gameBoardService.GetAll());
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<SessionGameBoard>> GetById(Guid id)
+        public async Task<ActionResult<GameBoard>> GetById(Guid id)
         {
-            var sessionGameBoard = sessionGameBoardService.GetById(id);
+            var sessionGameBoard = gameBoardService.GetById(id);
             if (sessionGameBoard == null)
             {
                 return NotFound();
@@ -38,7 +38,7 @@ namespace GameplaySessionTracker.Controllers
         [HttpGet("{id}/gamestate")]
         public async Task<ActionResult<GameState>> GetGameState(Guid id)
         {
-            var sessionGameBoard = await sessionGameBoardService.GetById(id);
+            var sessionGameBoard = await gameBoardService.GetById(id);
             if (sessionGameBoard == null)
             {
                 return NotFound();
@@ -59,22 +59,22 @@ namespace GameplaySessionTracker.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<SessionGameBoard>> Create(SessionGameBoard sessionGameBoard)
+        public async Task<ActionResult<GameBoard>> Create(GameBoard sessionGameBoard)
         {
             sessionGameBoard.Id = Guid.NewGuid();
-            var created = await sessionGameBoardService.Create(sessionGameBoard);
+            var created = await gameBoardService.Create(sessionGameBoard);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update(Guid id, SessionGameBoard sessionGameBoard)
+        public async Task<IActionResult> Update(Guid id, GameBoard sessionGameBoard)
         {
             if (id != sessionGameBoard.Id)
             {
                 return BadRequest("ID mismatch");
             }
 
-            var existing = await sessionGameBoardService.GetById(id);
+            var existing = await gameBoardService.GetById(id);
             if (existing == null)
             {
                 return NotFound();
@@ -86,20 +86,20 @@ namespace GameplaySessionTracker.Controllers
                 return BadRequest("Session does not exist");
             }
 
-            await sessionGameBoardService.Update(id, sessionGameBoard);
+            await gameBoardService.Update(id, sessionGameBoard);
             return NoContent();
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var existing = sessionGameBoardService.GetById(id);
+            var existing = gameBoardService.GetById(id);
             if (existing == null)
             {
                 return NotFound();
             }
 
-            await sessionGameBoardService.Delete(id);
+            await gameBoardService.Delete(id);
             return NoContent();
         }
 
@@ -107,23 +107,19 @@ namespace GameplaySessionTracker.Controllers
         public async Task<IActionResult> PlayerAction(Guid id, GameAction action)
         {
             // The game board exists
-            var gameBoard = await sessionGameBoardService.GetById(id);
+            var gameBoard = await gameBoardService.GetById(id);
             if (gameBoard == null)
             {
                 return NotFound();
             }
             // The session exists
-            var session = await sessionService.GetById(gameBoard.SessionId);
-            if (session == null)
-            {
-                return BadRequest("Session does not exist");
-            }
-            // The player exists in the session
-            if (!session.PlayerIds.Contains(action.PlayerId))
-            {
-                return BadRequest("Player does not exist in the session");
-            }
-
+            // this call check is expensive because it requires a sql query. 
+            // we should assume that the game board will never exist without its session
+            // var session = await sessionService.GetById(gameBoard.SessionId);
+            // if (session == null)
+            // {
+            //     return BadRequest("Session does not exist");
+            // }
             var state = RuleEngine.DeserializeGameState(gameBoard.Data);
             // The current player is the one making the action 
             if (state.CurrentPlayerId != action.PlayerId)
@@ -145,7 +141,7 @@ namespace GameplaySessionTracker.Controllers
                     return BadRequest("Target is required for Rebellion and PlaceTrack");
                 }
             }
-            await sessionGameBoardService.PlayerAction(id, action);
+            await gameBoardService.PlayerAction(id, action);
             return NoContent();
         }
     }

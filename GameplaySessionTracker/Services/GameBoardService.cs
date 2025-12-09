@@ -11,46 +11,58 @@ using static GameplaySessionTracker.GameRules.RuleEngine;
 
 namespace GameplaySessionTracker.Services
 {
-    public class SessionGameBoardService(
-        ISessionGameBoardRepository repository,
-        IHubContext<GameHub> hubContext) : ISessionGameBoardService
+    public class GameBoardService(
+        IGameBoardRepository repository,
+        IHubContext<GameHub> hubContext) : IGameBoardService
     {
 
-        public async Task<IEnumerable<SessionGameBoard>> GetAll()
+        public async Task<IEnumerable<GameBoard>> GetAll()
         {
             return repository.GetAll();
         }
 
-        public async Task<SessionGameBoard?> GetById(Guid id)
+        public async Task<GameBoard?> GetById(Guid id)
         {
             return repository.GetById(id);
         }
 
-        public async Task<SessionGameBoard> Create(SessionGameBoard sessionGameBoard)
+        public async Task<GameBoard> Create(GameBoard gameBoard)
         {
-            repository.Add(sessionGameBoard);
-            return sessionGameBoard;
+            repository.Add(gameBoard);
+            return gameBoard;
         }
 
-        public async Task TurnManager(Guid id, SessionGameBoard sessionGameBoard, GameState state)
+        public async Task StartGame(Guid id, List<Guid> playerIds)
         {
-            // Notify the current player about their turn
+            var gameBoard = await GetById(id) ?? throw new ArgumentException("Session game board not found");
+            var state = CreateNewGameState(playerIds);
+
+            await DoTurn(id, gameBoard, state);
+        }
+
+        private async Task DoTurn(Guid id, GameBoard gameBoard, GameState state)
+        {
+            // Do turn rollover if needed
             if (state.TurnPhase == TurnPhase.End)
             {
                 state = EndTurn(state);
             }
-            await hubContext.Clients.Group(sessionGameBoard.SessionId.ToString()).
+
+            // Notify the current player about their turn
+            await hubContext.Clients.Group(gameBoard.SessionId.ToString()).
                 SendAsync("YourTurn", state.CurrentPlayerId.GetHashCode().ToString(), GetValidActions(state));
 
-            sessionGameBoard.Data = SerializeGameState(state);
-            await Update(id, sessionGameBoard);
+            // Update the game board
+            gameBoard.Data = SerializeGameState(state);
+            await Update(id, gameBoard);
         }
 
-        public async Task Update(Guid id, SessionGameBoard sessionGameBoard)
+        public async Task Update(Guid id, GameBoard gameBoard)
         {
-            repository.Update(sessionGameBoard);
+            repository.Update(gameBoard);
+
             // Notify all players about the new state
-            await hubContext.Clients.Group(sessionGameBoard.SessionId.ToString()).
+            await hubContext.Clients.Group(gameBoard.SessionId.ToString()).
                 SendAsync("SessionGameBoardUpdated");
         }
 
@@ -83,8 +95,8 @@ namespace GameplaySessionTracker.Services
                 { Type: ActionType.Trade } => state, // TODO: implement RuleEngine.Trade(state),
                 _ => throw new ArgumentException("Invalid action type")
             };
-            sessionGameBoard.Data = SerializeGameState(state);
-            await Update(id, sessionGameBoard);
+
+            await DoTurn(id, sessionGameBoard, state);
         }
     }
 }

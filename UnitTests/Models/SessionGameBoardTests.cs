@@ -10,7 +10,7 @@ public class SessionGameBoardTests
     public void SessionGameBoard_DefaultConstructor_InitializesProperties()
     {
         // Arrange & Act
-        var sessionGameBoard = new SessionGameBoard();
+        var sessionGameBoard = new GameBoard();
 
         // Assert
         Assert.Equal(Guid.Empty, sessionGameBoard.Id);
@@ -22,7 +22,7 @@ public class SessionGameBoardTests
     public void SessionGameBoard_SetProperties_ReturnsCorrectValues()
     {
         // Arrange
-        var sessionGameBoard = new SessionGameBoard();
+        var sessionGameBoard = new GameBoard();
         var id = Guid.NewGuid();
         var sessionId = Guid.NewGuid();
         var data = "Test Data";

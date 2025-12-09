@@ -11,7 +11,7 @@ namespace GameplaySessionTracker.Controllers
     [Route("api/[controller]")]
     public class SessionsController(
             ISessionService sessionService,
-            ISessionGameBoardService sessionGameBoardService,
+            IGameBoardService gameBoardService,
             IPlayerService playerService)
         : ControllerBase
     {
@@ -43,8 +43,8 @@ namespace GameplaySessionTracker.Controllers
 
             var createdSession = await sessionService.Create(session);
 
-            var board = await sessionGameBoardService.Create(
-                    new SessionGameBoard { Id = session.BoardId, SessionId = session.Id });
+            var board = await gameBoardService.Create(
+                    new GameBoard { Id = session.BoardId, SessionId = session.Id });
 
             return CreatedAtAction(nameof(GetById), new { id = createdSession.Id }, createdSession);
         }
@@ -66,7 +66,7 @@ namespace GameplaySessionTracker.Controllers
             // Validate BoardId
             if (session.BoardId != Guid.Empty)
             {
-                var board = await sessionGameBoardService.GetById(session.BoardId);
+                var board = await gameBoardService.GetById(session.BoardId);
                 if (board == null)
                 {
                     return BadRequest($"BoardId {session.BoardId} does not exist");
@@ -97,6 +97,27 @@ namespace GameplaySessionTracker.Controllers
             }
 
             await sessionService.Delete(id);
+            // delete corresponding game board as well
+            await gameBoardService.Delete(existing.BoardId);
+
+            return NoContent();
+        }
+
+        [HttpPut("{id}/start_game")]
+        public async Task<IActionResult> StartGame(Guid id, Guid playerId)
+        {
+            var session = await sessionService.GetById(id);
+            if (session == null)
+            {
+                return NotFound();
+            }
+
+            if (playerId != session.PlayerIds[0])
+            {
+                return BadRequest("Only the host can start the game");
+            }
+
+            await gameBoardService.StartGame(session.BoardId, session.PlayerIds);
             return NoContent();
         }
 

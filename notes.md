@@ -1,4 +1,12 @@
 connection protocol:
+    landing page with name input
+    create session || join session
+    
+    create session:
+        creates new session, then joins it
+    join session:
+
+    
 
 when gamestate changes, send update to all clients in the corresponding session
 

@@ -1,6 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using GameplaySessionTracker.Models;
 using GameplaySessionTracker.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -98,7 +95,9 @@ namespace GameplaySessionTracker.Controllers
 
             await sessionService.Delete(id);
             // delete corresponding game board as well
-            await gameBoardService.Delete(existing.BoardId);
+            // this is unnecessar because of the ON DELETE CASCADE restraint on the database
+            // if this restriction is changed, this will have to be changed
+            // await gameBoardService.Delete(existing.BoardId);
 
             return NoContent();
         }

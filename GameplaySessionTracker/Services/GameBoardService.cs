@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using GameplaySessionTracker.Models;
 using GameplaySessionTracker.Repositories;
 using Microsoft.AspNetCore.SignalR;
 using GameplaySessionTracker.Hubs;
 using GameplaySessionTracker.GameRules;
-
 
 using static GameplaySessionTracker.GameRules.RuleEngine;
 
@@ -18,17 +18,17 @@ namespace GameplaySessionTracker.Services
 
         public async Task<IEnumerable<GameBoard>> GetAll()
         {
-            return repository.GetAll();
+            return await repository.GetAll();
         }
 
         public async Task<GameBoard?> GetById(Guid id)
         {
-            return repository.GetById(id);
+            return await repository.GetById(id);
         }
 
         public async Task<GameBoard> Create(GameBoard gameBoard)
         {
-            repository.Add(gameBoard);
+            await repository.Add(gameBoard);
             return gameBoard;
         }
 
@@ -61,7 +61,7 @@ namespace GameplaySessionTracker.Services
 
         public async Task Update(Guid id, GameBoard gameBoard)
         {
-            repository.Update(gameBoard);
+            await repository.Update(gameBoard);
 
             // Notify all players about the new state
             await hubContext.Clients.Group(gameBoard.SessionId.ToString()).
@@ -70,7 +70,7 @@ namespace GameplaySessionTracker.Services
 
         public async Task Delete(Guid id)
         {
-            repository.Delete(id);
+            await repository.Delete(id);
         }
 
         public async Task PlayerAction(Guid id, GameAction action)

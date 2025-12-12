@@ -441,17 +441,17 @@ namespace GameplaySessionTracker.GameRules
             var landedOn = GameConstants.Spaces[state.Players[state.CurrentPlayerId].BoardPosition];
             return landedOn.Type switch
             {
-                SpaceType.Land => new List<ActionType> { ActionType.Accept, ActionType.Pass, ActionType.Trade },
-                SpaceType.Track when state.TurnPhase == TurnPhase.SpaceOption => new List<ActionType> { ActionType.Accept, ActionType.Trade, ActionType.PlaceTrack },
-                SpaceType.Track when state.TurnPhase == TurnPhase.RouteSelect => new List<ActionType> { ActionType.PlaceTrack },
-                SpaceType.Rebellion when state.TurnPhase == TurnPhase.SpaceOption => new List<ActionType> { ActionType.Accept },
-                SpaceType.Rebellion when state.TurnPhase == TurnPhase.RouteSelect => new List<ActionType> { ActionType.Rebellion },
-                SpaceType.SettlerRents => new List<ActionType> { ActionType.Accept },
-                SpaceType.LandClaims => new List<ActionType> { ActionType.Accept },
-                SpaceType.SurveyFees => new List<ActionType> { ActionType.Accept },
-                SpaceType.EndOfTrack => new List<ActionType> { ActionType.Accept },
-                SpaceType.RoadbedCosts => new List<ActionType> { ActionType.Accept },
-                SpaceType.Go => new List<ActionType> { ActionType.Accept },
+                SpaceType.Land => [ActionType.Accept, ActionType.Pass, ActionType.Trade],
+                SpaceType.Track when state.TurnPhase == TurnPhase.SpaceOption => [ActionType.Accept, ActionType.Trade, ActionType.PlaceTrack],
+                SpaceType.Track when state.TurnPhase == TurnPhase.RouteSelect => [ActionType.PlaceTrack],
+                SpaceType.Rebellion when state.TurnPhase == TurnPhase.SpaceOption => [ActionType.Accept],
+                SpaceType.Rebellion when state.TurnPhase == TurnPhase.RouteSelect => [ActionType.Rebellion],
+                SpaceType.SettlerRents => [ActionType.Accept],
+                SpaceType.LandClaims => [ActionType.Accept],
+                SpaceType.SurveyFees => [ActionType.Accept],
+                SpaceType.EndOfTrack => [ActionType.Accept],
+                SpaceType.RoadbedCosts => [ActionType.Accept],
+                SpaceType.Go => [ActionType.Accept],
                 _ => throw new ArgumentException("Invalid space type")
             };
 

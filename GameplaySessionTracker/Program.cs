@@ -1,14 +1,8 @@
 using GameplaySessionTracker.Services;
 using GameplaySessionTracker.Hubs;
 using GameplaySessionTracker.Repositories;
-using GameplaySessionTracker.GameRules;
-// using GameplaySessionTracker.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Bind configuration to strongly-typed settings
-// var appSettings = new AppSettings();
-// builder.Configuration.Bind(appSettings);
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -22,10 +16,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll",
         policy =>
         {
-            policy.WithOrigins("http://localhost:3000") // Specify the allowed origin
+            policy.WithOrigins("http://localhost:3000") // TODO: add production URL
                   .AllowAnyHeader()
                   .AllowAnyMethod()
-                  .AllowCredentials(); // Allow credentials
+                  .AllowCredentials();
         });
 });
 
@@ -37,13 +31,14 @@ builder.Services.AddSingleton<ISessionRepository>(
     sp => new SessionRepository(connectionString));
 builder.Services.AddSingleton<IPlayerRepository>(
     sp => new PlayerRepository(connectionString));
-builder.Services.AddSingleton<IGameBoardRepository, GameBoardRepository>();
+builder.Services.AddSingleton<IGameBoardRepository>(
+    sp => new GameBoardRepository(connectionString));
 
 // Register services as Singletons
 builder.Services.AddSingleton<ISessionService, SessionService>();
 builder.Services.AddSingleton<IPlayerService, PlayerService>();
-// builder.Services.AddSingleton<IGameBoardService, GameBoardService>();
 builder.Services.AddSingleton<IGameBoardService, GameBoardService>();
+
 builder.Services.AddSignalR();
 
 var app = builder.Build();

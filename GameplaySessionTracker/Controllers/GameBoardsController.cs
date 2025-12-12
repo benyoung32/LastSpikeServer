@@ -18,13 +18,13 @@ namespace GameplaySessionTracker.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GameBoard>>> GetAll()
         {
-            return Ok(gameBoardService.GetAll());
+            return Ok(await gameBoardService.GetAll());
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<GameBoard>> GetById(Guid id)
         {
-            var sessionGameBoard = gameBoardService.GetById(id);
+            var sessionGameBoard = await gameBoardService.GetById(id);
             if (sessionGameBoard == null)
             {
                 return NotFound();
@@ -96,7 +96,7 @@ namespace GameplaySessionTracker.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var existing = gameBoardService.GetById(id);
+            var existing = await gameBoardService.GetById(id);
             if (existing == null)
             {
                 return NotFound();
@@ -115,14 +115,6 @@ namespace GameplaySessionTracker.Controllers
             {
                 return NotFound();
             }
-            // The session exists
-            // this call check is expensive because it requires a sql query. 
-            // we should assume that the game board will never exist without its session
-            // var session = await sessionService.GetById(gameBoard.SessionId);
-            // if (session == null)
-            // {
-            //     return BadRequest("Session does not exist");
-            // }
             var state = RuleEngine.DeserializeGameState(gameBoard.Data);
             // The current player is the one making the action 
             if (state.CurrentPlayerId != action.PlayerId)
@@ -149,8 +141,14 @@ namespace GameplaySessionTracker.Controllers
         }
         private Guid ObfuscatePlayerId(Guid playerId)
         {
-            var hash = md5.ComputeHash(playerId.ToByteArray());
-            return new Guid(hash);
+            // TODO: obfuscate player ids. Currently, any client could send an action for another player
+            // by making a request with their player id, exposed through this endpoint as well as the session end points.
+            // In the future, I might want to implement a password or other unique client identifier to prevent this. 
+
+            // var hash = md5.ComputeHash(playerId.ToByteArray());
+            // return new Guid(hash);
+
+            return playerId;
         }
     }
 }

@@ -1,46 +1,50 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Data;
 using System.Linq;
+using Dapper;
 using GameplaySessionTracker.Models;
+using Microsoft.Data.SqlClient;
 
 namespace GameplaySessionTracker.Repositories
 {
-    public class GameBoardRepository : IGameBoardRepository
+    public class GameBoardRepository(string connectionString) : IGameBoardRepository
     {
-        private readonly List<GameBoard> _gameBoards = new();
+        private SqlConnection CreateConnection() => new(connectionString);
 
-        public IEnumerable<GameBoard> GetAll()
+        public async Task<IEnumerable<GameBoard>> GetAll()
         {
-            return _gameBoards;
+            using var connection = CreateConnection();
+            return await connection.QueryAsync<GameBoard>("SELECT * FROM GameBoards");
         }
 
-        public GameBoard? GetById(Guid id)
+        public async Task<GameBoard?> GetById(Guid id)
         {
-            return _gameBoards.FirstOrDefault(sgb => sgb.Id == id);
+            using var connection = CreateConnection();
+            return await connection.QueryFirstOrDefaultAsync<GameBoard>("SELECT * FROM GameBoards WHERE Id = @Id", new { Id = id });
         }
 
-        public void Add(GameBoard gameBoard)
+        public async Task Add(GameBoard gameBoard)
         {
-            _gameBoards.Add(gameBoard);
+            using var connection = CreateConnection();
+            await connection.ExecuteAsync(
+                "INSERT INTO GameBoards (Id, SessionId, Data) VALUES (@Id, @SessionId, @Data)",
+                gameBoard);
         }
 
-        public void Update(GameBoard gameBoard)
+        public async Task Update(GameBoard gameBoard)
         {
-            var existing = GetById(gameBoard.Id);
-            if (existing != null)
-            {
-                existing.SessionId = gameBoard.SessionId;
-                existing.Data = gameBoard.Data;
-            }
+            using var connection = CreateConnection();
+            await connection.ExecuteAsync(
+                "UPDATE GameBoards SET SessionId = @SessionId, Data = @Data WHERE Id = @Id",
+                gameBoard);
         }
 
-        public void Delete(Guid id)
+        public async Task Delete(Guid id)
         {
-            var existing = GetById(id);
-            if (existing != null)
-            {
-                _gameBoards.Remove(existing);
-            }
+            using var connection = CreateConnection();
+            await connection.ExecuteAsync("DELETE FROM GameBoards WHERE Id = @Id", new { Id = id });
         }
     }
 }

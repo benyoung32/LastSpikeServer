@@ -42,7 +42,7 @@ public class SessionGameBoardServiceTests
             new GameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "Data1" },
             new GameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "Data2" }
         };
-        _mockRepository.Setup(r => r.GetAll()).Returns(sessionGameBoards);
+        _mockRepository.Setup(r => r.GetAll()).ReturnsAsync(sessionGameBoards);
 
         // Act
         var result = await _service.GetAll();
@@ -58,7 +58,7 @@ public class SessionGameBoardServiceTests
         // Arrange
         var id = Guid.NewGuid();
         var sgb = new GameBoard { Id = id, SessionId = Guid.NewGuid(), Data = "Test" };
-        _mockRepository.Setup(r => r.GetById(id)).Returns(sgb);
+        _mockRepository.Setup(r => r.GetById(id)).ReturnsAsync(sgb);
 
         // Act
         var result = await _service.GetById(id);
@@ -74,7 +74,7 @@ public class SessionGameBoardServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
-        _mockRepository.Setup(r => r.GetById(id)).Returns((GameBoard?)null);
+        _mockRepository.Setup(r => r.GetById(id)).ReturnsAsync((GameBoard?)null);
 
         // Act
         var result = await _service.GetById(id);
@@ -89,6 +89,7 @@ public class SessionGameBoardServiceTests
     {
         // Arrange
         var sgb = new GameBoard { Id = Guid.NewGuid(), SessionId = Guid.NewGuid(), Data = "New" };
+        _mockRepository.Setup(r => r.Add(sgb)).Returns(Task.CompletedTask);
 
         // Act
         var result = await _service.Create(sgb);
@@ -104,7 +105,11 @@ public class SessionGameBoardServiceTests
         // Arrange
         var id = Guid.NewGuid();
         var sgb = new GameBoard { Id = id, SessionId = Guid.NewGuid(), Data = "Updated" };
-        _mockRepository.Setup(r => r.GetById(id)).Returns(sgb);
+        _mockRepository.Setup(r => r.Update(sgb)).Returns(Task.CompletedTask);
+        // We don't need to mock GetById if Update is called directly with the object, 
+        // unlike PlayerAction which calls GetById inside. 
+        // But checking `GameBoardService.Update` implementation:
+        // it calls `repository.Update(gameBoard)` directly.
 
         // Act
         await _service.Update(id, sgb);
@@ -120,6 +125,7 @@ public class SessionGameBoardServiceTests
     {
         // Arrange
         var id = Guid.NewGuid();
+        _mockRepository.Setup(r => r.Delete(id)).Returns(Task.CompletedTask);
 
         // Act
         await _service.Delete(id);

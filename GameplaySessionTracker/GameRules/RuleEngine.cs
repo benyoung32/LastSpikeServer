@@ -10,7 +10,9 @@ namespace GameplaySessionTracker.GameRules
         bool IsGameOver,
         Guid CurrentPlayerId, // which player's turn it is
                               // TODO: add last dice rolled tuple for clientside display
-        TurnPhase TurnPhase
+        TurnPhase TurnPhase, // turns have multiple phases. Some actions end the turn completely while others require multiple user inputs
+        List<ActionType> ValidActions, // the valid moves for the current player
+        Trade? PendingTrade
     );
 
     public record PlayerState(
@@ -19,28 +21,19 @@ namespace GameplaySessionTracker.GameRules
             bool SkipNextTurn // if true, the player will skip their next turn
         );
 
-    public record CityPair(City City1, City City2) : IEnumerable<City>
-    {
-        public IEnumerator<City> GetEnumerator()
-        {
-            yield return City1;
-            yield return City2;
-        }
-
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
-        public override string ToString()
-        {
-            return $"{City1}, {City2}";
-        }
-    }
+    public record CityPair(City City1, City City2);
 
     public record Route(CityPair CityPair, int NumTracks);
 
     public record Property(City City, Guid Owner_PID);
+
+    public record Trade(
+        Guid Player1Id,
+        Guid Player2Id,
+        List<Property> Properties,
+        int Player1Money,
+        int Player2Money
+    );
 
     public static class RuleEngine
     {
@@ -58,12 +51,29 @@ namespace GameplaySessionTracker.GameRules
             new List<Property>(),
             false,
             playerIDs[0],
-            TurnPhase.Start);
+            TurnPhase.Start,
+            new List<ActionType>(),
+            null
+            );
+
             foreach (var p in playerIDs)
             {
                 state.Players.Add(p, new PlayerState(GameConstants.PlayerStartingMoney, 0, false));
             }
+
             return state;
+        }
+
+        public static GameState PassGo(GameState state)
+        {
+            state.Players[state.CurrentPlayerId] = state.Players[state.CurrentPlayerId] with
+            {
+                Money = state.Players[state.CurrentPlayerId].Money + GameConstants.CPRSubsidy
+            };
+            return state with
+            {
+                TurnPhase = TurnPhase.End
+            };
         }
 
         #region Game Actions
@@ -80,8 +90,8 @@ namespace GameplaySessionTracker.GameRules
             var newBoardPosition = currentPlayer.BoardPosition + diceRoll;
             if (newBoardPosition >= GameConstants.Spaces.Count)
             {
-                state = PassGo(state);
                 newBoardPosition -= GameConstants.Spaces.Count;
+                currentPlayer = state.Players[state.CurrentPlayerId];
             }
             state.Players[state.CurrentPlayerId] = currentPlayer with
             {
@@ -126,6 +136,18 @@ namespace GameplaySessionTracker.GameRules
                 Money = state.Players[state.CurrentPlayerId].Money +
                 state.Players.Count * 3000
             };
+
+            foreach (var playerId in state.Players.Keys.ToList())
+            {
+                if (playerId != state.CurrentPlayerId)
+                {
+                    state.Players[playerId] = state.Players[playerId] with
+                    {
+                        Money = state.Players[playerId].Money - 3000
+                    };
+                }
+            }
+
             return state with
             {
                 TurnPhase = TurnPhase.End
@@ -164,7 +186,10 @@ namespace GameplaySessionTracker.GameRules
         {
             if (GetRebellionTargets(state).Count == 0)
             {
-                return state;
+                return state with
+                {
+                    TurnPhase = TurnPhase.End
+                };
             }
 
             return state with
@@ -203,6 +228,15 @@ namespace GameplaySessionTracker.GameRules
             };
         }
 
+        public static GameState Scandal(GameState state)
+        {
+            state = PaySpaceCost(state);
+            return state with
+            {
+                TurnPhase = TurnPhase.End
+            };
+        }
+
         /// <summary>
         /// Adds 1 track to the specified route, checks if route is finished.
         /// If a track is laid on a currently empty route, the current player is awarded a property
@@ -237,15 +271,16 @@ namespace GameplaySessionTracker.GameRules
             {
                 NumTracks = route.NumTracks + 1
             };
+            var newRoute = state.Routes[targetRouteIndex];
 
             // if this was the first track laid, give the current player a new property
             if (firstTrack)
             {
-                state = BuyProperty(state);
+                state = DrawProperty(state);
             }
 
             // if the route is now full, award players who own properties on the route
-            if (route.NumTracks == 4)
+            if (newRoute.NumTracks == 4)
             {
                 state = FinishRoute(state, target);
             }
@@ -279,9 +314,17 @@ namespace GameplaySessionTracker.GameRules
         public static GameState EndTurn(GameState state)
         {
             var playerIds = state.Players.Keys.ToList();
-            var currentPlayerIndex = playerIds.FindIndex(p => p == state.CurrentPlayerId);
-            var nextPlayerId = playerIds[(currentPlayerIndex + 1) % playerIds.Count];
-
+            var currentPlayerIndex = (playerIds.FindIndex(p => p == state.CurrentPlayerId) + 1) % playerIds.Count;
+            var nextPlayerId = playerIds[currentPlayerIndex];
+            while (state.Players[nextPlayerId].SkipNextTurn)
+            {
+                state.Players[nextPlayerId] = state.Players[nextPlayerId] with
+                {
+                    SkipNextTurn = false
+                };
+                currentPlayerIndex = (currentPlayerIndex + 1) % playerIds.Count;
+                nextPlayerId = playerIds[currentPlayerIndex];
+            }
             return state with
             {
                 TurnPhase = TurnPhase.Start,
@@ -289,18 +332,70 @@ namespace GameplaySessionTracker.GameRules
             };
         }
 
+        public static GameState ExecuteTrade(GameState state)
+        {
+            var trade = state.PendingTrade;
+            if (trade == null)
+            {
+                return state;
+            }
+
+            if (!IsTradeValid(state, trade))
+            {
+                return state;
+            }
+
+            var newPlayers = new OrderedDictionary<Guid, PlayerState>(state.Players);
+            newPlayers[trade.Player1Id] = state.Players[trade.Player1Id] with
+            {
+                Money = state.Players[trade.Player1Id].Money + trade.Player2Money - trade.Player1Money
+            };
+            newPlayers[trade.Player2Id] = state.Players[trade.Player2Id] with
+            {
+                Money = state.Players[trade.Player2Id].Money + trade.Player1Money - trade.Player2Money
+            };
+
+            foreach (var tradedProp in trade.Properties)
+            {
+                state.Properties.Remove(state.Properties.Find(p => p.Owner_PID == tradedProp.Owner_PID)!);
+                state.Properties.Add(tradedProp with
+                {
+                    Owner_PID = tradedProp.Owner_PID == trade.Player1Id ? trade.Player2Id : trade.Player1Id
+                });
+            }
+
+            return state with
+            {
+                Players = newPlayers,
+                PendingTrade = null
+            };
+        }
+
         #endregion
 
         #region Helpers
 
-        public static GameState PassGo(GameState state)
+        public static bool IsTradeValid(GameState state, Trade trade)
         {
-            state.Players[state.CurrentPlayerId] = state.Players[state.CurrentPlayerId] with
+            var player1 = state.Players[trade.Player1Id];
+            var player2 = state.Players[trade.Player2Id];
+
+            if (player1.Money < trade.Player1Money || player2.Money < trade.Player2Money)
             {
-                Money = state.Players[state.CurrentPlayerId].Money + GameConstants.CPRSubsidy
-            };
-            return state;
+                return false;
+            }
+
+            foreach (var property in trade.Properties)
+            {
+                if (property.Owner_PID != trade.Player1Id && property.Owner_PID != trade.Player2Id)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
+
 
         private static GameState DrawProperty(GameState state)
         {
@@ -341,8 +436,6 @@ namespace GameplaySessionTracker.GameRules
         {
             var currentPlayer = state.Players[state.CurrentPlayerId];
             var currentSpace = GameConstants.Spaces[currentPlayer.BoardPosition];
-            if (currentSpace.Type != SpaceType.Track)
-                return state;
             state.Players[state.CurrentPlayerId] = currentPlayer with
             {
                 Money = currentPlayer.Money - currentSpace.Cost
@@ -407,7 +500,7 @@ namespace GameplaySessionTracker.GameRules
                 num_owned[property.Owner_PID][property.City] += 1;
             }
 
-            foreach (var city in finished)
+            foreach (var city in new[] { finished.City1, finished.City2 })
                 foreach (var playerId in state.Players.Keys)
                 {
                     if (!awards.ContainsKey(playerId))
@@ -438,20 +531,30 @@ namespace GameplaySessionTracker.GameRules
 
         public static List<ActionType> GetValidActions(GameState state)
         {
+            // TODO: implement extra checks, including checking if the player has enough money to 
+            // to purchase the tile theyve landed on 
             var landedOn = GameConstants.Spaces[state.Players[state.CurrentPlayerId].BoardPosition];
+
+            // players can always roll or trade at the start of their turn
+            if (state.TurnPhase == TurnPhase.Start)
+            {
+                return [ActionType.Roll, ActionType.TradeOffer];
+            }
+
             return landedOn.Type switch
             {
-                SpaceType.Land => [ActionType.Accept, ActionType.Pass, ActionType.Trade],
-                SpaceType.Track when state.TurnPhase == TurnPhase.SpaceOption => [ActionType.Accept, ActionType.Trade, ActionType.PlaceTrack],
+                SpaceType.Land => [ActionType.Buy, ActionType.Pass, ActionType.TradeOffer],
+                SpaceType.Track when state.TurnPhase == TurnPhase.SpaceOption => [ActionType.Buy, ActionType.TradeOffer],
                 SpaceType.Track when state.TurnPhase == TurnPhase.RouteSelect => [ActionType.PlaceTrack],
-                SpaceType.Rebellion when state.TurnPhase == TurnPhase.SpaceOption => [ActionType.Accept],
+                SpaceType.Rebellion when state.TurnPhase == TurnPhase.SpaceOption => [ActionType.Ok],
                 SpaceType.Rebellion when state.TurnPhase == TurnPhase.RouteSelect => [ActionType.Rebellion],
-                SpaceType.SettlerRents => [ActionType.Accept],
-                SpaceType.LandClaims => [ActionType.Accept],
-                SpaceType.SurveyFees => [ActionType.Accept],
-                SpaceType.EndOfTrack => [ActionType.Accept],
-                SpaceType.RoadbedCosts => [ActionType.Accept],
-                SpaceType.Go => [ActionType.Accept],
+                SpaceType.SettlerRents => [ActionType.Ok],
+                SpaceType.LandClaims => [ActionType.Roll],
+                SpaceType.SurveyFees => [ActionType.Ok],
+                SpaceType.EndOfTrack => [ActionType.Ok],
+                SpaceType.RoadbedCosts => [ActionType.Ok],
+                SpaceType.Go => [ActionType.Ok],
+                SpaceType.Scandal => [ActionType.Ok],
                 _ => throw new ArgumentException("Invalid space type")
             };
 
@@ -517,7 +620,7 @@ namespace GameplaySessionTracker.GameRules
 
         public static GameState DeserializeGameState(string json)
         {
-            return JsonSerializer.Deserialize<GameState>(json);
+            return JsonSerializer.Deserialize<GameState>(json) ?? throw new ArgumentException("Invalid JSON");
         }
     }
     #endregion

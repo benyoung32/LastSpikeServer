@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GameplaySessionTracker.Models;
+using GameplaySessionTracker.GameRules;
 
 namespace GameplaySessionTracker.Services
 {
@@ -12,6 +13,9 @@ namespace GameplaySessionTracker.Services
         Task Update(Guid id, GameBoard gameBoard);
         Task Delete(Guid id);
         Task PlayerAction(Guid id, GameAction action);
+        Task OfferTrade(Guid id, Trade trade);
+        Task CloseTradeOffer(Guid id, bool accept);
         Task StartGame(Guid id, List<Guid> playerIds);
+
     }
 }

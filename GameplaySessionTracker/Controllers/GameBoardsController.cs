@@ -55,7 +55,8 @@ namespace GameplaySessionTracker.Controllers
                     p => new KeyValuePair<Guid, PlayerState>(
                         ObfuscatePlayerId(p.Key),
                         p.Value))),
-                CurrentPlayerId = ObfuscatePlayerId(state.CurrentPlayerId)
+                CurrentPlayerId = ObfuscatePlayerId(state.CurrentPlayerId),
+                ValidActions = RuleEngine.GetValidActions(state)
             };
 
             return Ok(state);
@@ -106,6 +107,52 @@ namespace GameplaySessionTracker.Controllers
             return NoContent();
         }
 
+        [HttpPut("{id}/offer-trade")]
+        public async Task<IActionResult> OfferTrade(Guid id, Trade tradeOffer)
+        {
+            // The game board exists
+            var gameBoard = await gameBoardService.GetById(id);
+            if (gameBoard == null)
+            {
+                return NotFound();
+            }
+            var state = RuleEngine.DeserializeGameState(gameBoard.Data);
+
+            if (!RuleEngine.IsTradeValid(state, tradeOffer))
+            {
+                return BadRequest("Trade offer is not valid");
+            }
+
+            await gameBoardService.OfferTrade(id, tradeOffer);
+            return NoContent();
+        }
+
+        [HttpPut("{id}/trade-action")]
+        public async Task<IActionResult> CloseTradeOffer(Guid id, [FromBody] TradeActionRequest request)
+        {
+            // The game board exists
+            var gameBoard = await gameBoardService.GetById(id);
+            if (gameBoard == null)
+            {
+                return NotFound();
+            }
+            var state = RuleEngine.DeserializeGameState(gameBoard.Data);
+
+            if (state.PendingTrade == null)
+            {
+                return BadRequest("No pending trade offer");
+            }
+
+            // TODO: fix this check
+            // if (state.PendingTrade.Player2Id != request.PlayerId) 
+            // {
+            //     return BadRequest("Not your trade offer");
+            // }
+
+            await gameBoardService.CloseTradeOffer(id, request.Accept);
+            return NoContent();
+        }
+
         [HttpPut("{id}/action")]
         public async Task<IActionResult> PlayerAction(Guid id, GameAction action)
         {
@@ -136,9 +183,11 @@ namespace GameplaySessionTracker.Controllers
                     return BadRequest("Target is required for Rebellion and PlaceTrack");
                 }
             }
+
             await gameBoardService.PlayerAction(id, action);
             return NoContent();
         }
+
         private Guid ObfuscatePlayerId(Guid playerId)
         {
             // TODO: obfuscate player ids. Currently, any client could send an action for another player

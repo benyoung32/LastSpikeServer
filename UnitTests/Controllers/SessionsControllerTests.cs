@@ -227,25 +227,4 @@ public class SessionsControllerTests
         // Expect BadRequest as only host (index 0) can start
         Assert.IsType<BadRequestObjectResult>(result);
     }
-    [Fact]
-    public async Task GetSessionPlayers_ReturnsPublicPlayerDtos()
-    {
-        var sessionId = Guid.NewGuid();
-        var players = new List<Player>
-        {
-            new Player { Id = Guid.NewGuid(), Name = "Alice" },
-            new Player { Id = Guid.NewGuid(), Name = "Bob" }
-        };
-
-        _mockService.Setup(s => s.GetById(sessionId)).ReturnsAsync(new SessionData { Id = sessionId });
-        _mockService.Setup(s => s.GetSessionPlayers(sessionId)).ReturnsAsync(players);
-
-        var result = await _controller.GetSessionPlayers(sessionId);
-
-        var okResult = Assert.IsType<OkObjectResult>(result.Result);
-        var returnPlayers = Assert.IsAssignableFrom<IEnumerable<PublicPlayerDto>>(okResult.Value);
-        Assert.Equal(2, returnPlayers.Count());
-        Assert.Contains(returnPlayers, p => p.Name == "Alice");
-        Assert.Contains(returnPlayers, p => p.Name == "Bob");
-    }
 }

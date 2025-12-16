@@ -62,8 +62,8 @@ namespace GameplaySessionTracker.GameRules
             new Space(SpaceType.Land, 7000),
             new Space(SpaceType.SurveyFees, 3000),
             new Space(SpaceType.Track, 8000),
-            new Space(SpaceType.Land, 9000),
             new Space(SpaceType.Scandal, 10000),
+            new Space(SpaceType.Land, 9000),
             new Space(SpaceType.Track, 10000),
             new Space(SpaceType.Land, 12000)
         };

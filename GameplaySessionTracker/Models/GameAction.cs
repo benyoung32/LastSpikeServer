@@ -17,11 +17,14 @@ namespace GameplaySessionTracker.Models
         SurveyFees
         */
         Move,
-        Accept,
+        Ok,
         Pass,
         Rebellion,
-        Trade,
-        PlaceTrack
+        TradeOffer,
+        PlaceTrack,
+        Roll,
+        Buy,
+        AcceptTradeOffer
     }
 
     public class GameAction

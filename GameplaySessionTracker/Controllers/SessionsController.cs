@@ -29,7 +29,7 @@ namespace GameplaySessionTracker.Controllers
             return Ok(session);
         }
 
-
+        // TODO: create small hash of sessionId to expose to client 
 
         [HttpPost]
         public async Task<ActionResult<SessionData>> Create(SessionData session)

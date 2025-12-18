@@ -114,6 +114,7 @@ namespace GameplaySessionTracker.Services
 
         private async Task ProcessTurn(Guid id, GameBoard gameBoard, GameState state)
         {
+            // TODO: implement some sort of action tracker to enable post game history
             // Do turn rollover if needed
             if (state.TurnPhase == TurnPhase.End)
             {

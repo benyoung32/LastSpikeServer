@@ -12,6 +12,8 @@ namespace GameplaySessionTracker.GameRules
                               // TODO: add last dice rolled tuple for clientside display
         TurnPhase TurnPhase, // turns have multiple phases. Some actions end the turn completely while others require multiple user inputs
         List<ActionType> ValidActions, // the valid moves for the current player
+        int Dice1,
+        int Dice2,  // the dice rolled for the current turn
         Trade? PendingTrade
     );
 
@@ -53,6 +55,8 @@ namespace GameplaySessionTracker.GameRules
             playerIDs[0],
             TurnPhase.Start,
             new List<ActionType>(),
+            0,
+            0,
             null
             );
 
@@ -85,9 +89,9 @@ namespace GameplaySessionTracker.GameRules
         /// <returns></returns>
         public static GameState Move(GameState state)
         {
-            var diceRoll = DiceRoll();
+            state = DiceRoll(state);
             var currentPlayer = state.Players[state.CurrentPlayerId];
-            var newBoardPosition = currentPlayer.BoardPosition + diceRoll;
+            var newBoardPosition = currentPlayer.BoardPosition + state.Dice1 + state.Dice2;
             if (newBoardPosition >= GameConstants.Spaces.Count)
             {
                 newBoardPosition -= GameConstants.Spaces.Count;
@@ -134,7 +138,7 @@ namespace GameplaySessionTracker.GameRules
             state.Players[state.CurrentPlayerId] = state.Players[state.CurrentPlayerId] with
             {
                 Money = state.Players[state.CurrentPlayerId].Money +
-                state.Players.Count * 3000
+                (state.Players.Count - 1) * 3000
             };
 
             foreach (var playerId in state.Players.Keys.ToList())
@@ -156,10 +160,10 @@ namespace GameplaySessionTracker.GameRules
 
         public static GameState LandClaims(GameState state)
         {
+            state = DiceRoll(state);
             state.Players[state.CurrentPlayerId] = state.Players[state.CurrentPlayerId] with
             {
-                Money = state.Players[state.CurrentPlayerId].Money -
-                DiceRoll() * 1000
+                Money = state.Players[state.CurrentPlayerId].Money - (state.Dice1 + state.Dice2) * 1000
             };
             return state with
             {
@@ -174,6 +178,7 @@ namespace GameplaySessionTracker.GameRules
         /// <returns></returns>
         public static GameState BuyProperty(GameState state)
         {
+            // TODO: don't pay space cost if there aren't any more properties to draw
             PaySpaceCost(state);
             state = DrawProperty(state);
             return state with
@@ -328,7 +333,9 @@ namespace GameplaySessionTracker.GameRules
             return state with
             {
                 TurnPhase = TurnPhase.Start,
-                CurrentPlayerId = nextPlayerId
+                CurrentPlayerId = nextPlayerId,
+                Dice1 = 0,
+                Dice2 = 0,
             };
         }
 
@@ -427,9 +434,15 @@ namespace GameplaySessionTracker.GameRules
             return state;
         }
 
-        private static int DiceRoll()
+        private static GameState DiceRoll(GameState state)
         {
-            return new Random().Next(2, 13);
+            var rng = new Random();
+
+            return state with
+            {
+                Dice1 = rng.Next(1, 7),
+                Dice2 = rng.Next(1, 7)
+            };
         }
 
         private static GameState PaySpaceCost(GameState state)

@@ -1,0 +1,29 @@
+{
+  "dependencies": {
+    "mssql2": {
+      "restored": true,
+      "restoreTime": "2025-12-17T06:23:51.5538302Z"
+    },
+    "secrets1": {
+      "restored": true,
+      "restoreTime": "2025-12-17T06:23:28.6039308Z"
+    }
+  },
+  "parameters": {
+    "mssql2.serviceConnectorResourceGroupName": {
+      "Name": "mssql2.serviceConnectorResourceGroupName",
+      "Type": "resourceGroup",
+      "Value": "LastSpikeServer"
+    },
+    "mssql2.resourceGroupName": {
+      "Name": "mssql2.resourceGroupName",
+      "Type": "resourceGroup",
+      "Value": "LastSpikeServer"
+    },
+    "mssql2.subscriptionId": {
+      "Name": "mssql2.subscriptionId",
+      "Type": "subscription",
+      "Value": "9be4fc64-7d9e-4f15-9415-2c341473f87d"
+    }
+  }
+}

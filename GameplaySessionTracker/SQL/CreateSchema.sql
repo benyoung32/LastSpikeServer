@@ -5,24 +5,24 @@ BEGIN
 END
 GO
 
-IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Sessions')
-BEGIN
-    DROP TABLE Sessions;
-END
-GO
-
 IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Players')
 BEGIN
     DROP TABLE Players;
 END
 GO
 
+IF EXISTS (SELECT * FROM sys.tables WHERE name = 'GameBoards')
+BEGIN
+    DROP TABLE GameBoards;
+END
+GO
 
--- IF EXISTS (SELECT * FROM sys.tables WHERE name = 'GameBoards')
--- BEGIN
---     DROP TABLE GameBoards;
--- END
--- GO
+IF EXISTS (SELECT * FROM sys.tables WHERE name = 'Sessions')
+BEGIN
+    DROP TABLE Sessions;
+END
+GO
+
 
 -- Create LastSpike database
 IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'LastSpike')
@@ -64,3 +64,10 @@ CREATE TABLE SessionPlayers (
     FOREIGN KEY (PlayerId) REFERENCES Players(Id)
 );
 GO
+
+CREATE TABLE GameBoards (
+    Id UNIQUEIDENTIFIER PRIMARY KEY,
+    SessionId UNIQUEIDENTIFIER NOT NULL,
+    Data NVARCHAR(MAX) NOT NULL,
+    FOREIGN KEY (SessionId) REFERENCES Sessions(Id) ON DELETE CASCADE
+);

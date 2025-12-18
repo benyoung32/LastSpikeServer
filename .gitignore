@@ -4,8 +4,10 @@ UnitTests/bin/**
 UnitTests/obj/**
 UnitTests/TestResults/**
 UnitTests/CoverageReport/**
+GameplaySessionTracker/.vs/**
+GameplaySessionTracker/.vscode/**
 
-# Protect sensitive configuration files
+Protect sensitive configuration files
 **/appsettings.Production.json
 **/appsettings.*.json
 !**/appsettings.json

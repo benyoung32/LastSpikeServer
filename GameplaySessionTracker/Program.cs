@@ -24,8 +24,11 @@ builder.Services.AddCors(options =>
          });
 });
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Server=localhost;Database=LastSpike;Integrated Security=true;TrustServerCertificate=true;";
+
+string connectionString = (builder.Environment.IsDevelopment()
+    ? builder.Configuration.GetConnectionString("LocalConnection")
+    : builder.Configuration.GetConnectionString("DefaultConnection"))
+    ?? throw new InvalidOperationException("Connection string not found");
 
 // Register repositories as Singletons with connection string
 builder.Services.AddSingleton<ISessionRepository>(
@@ -50,6 +53,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+Console.WriteLine(connectionString);
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");

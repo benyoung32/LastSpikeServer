@@ -6,6 +6,9 @@ UnitTests/TestResults/**
 UnitTests/CoverageReport/**
 GameplaySessionTracker/.vs/**
 GameplaySessionTracker/.vscode/**
+.vs/**
+.agent/**
+.vscode/**
 
 Protect sensitive configuration files
 **/appsettings.Production.json

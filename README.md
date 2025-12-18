@@ -4,7 +4,7 @@ The backend server for the "Last Spike" board game, built with ASP.NET Core. Thi
 
 ## Inspiration
 
-The goal behind project was to recreate one of my favorite board games, The Last Spike 1976, inside a web application so that I could play the game with friends from far away. The classic Canadian board game is a monopoly-type game where players compete to hoard properties and money while building the transcontinental railroad across Canada. The ultimate goal of each player is to have the most money when the last spike of the rail connecting Vancouver and Montreal is driven.
+The goal behind this project was to recreate one of my favorite board games, The Last Spike 1976, inside a web application so that I could play the game with friends from far away. The classic Canadian board game is a monopoly-type game where players compete to hoard properties and money while building the transcontinental railroad across Canada. The ultimate goal of each player is to have the most money when the last spike of the rail connecting Vancouver and Montreal is driven.
 
 ## Setup
 
@@ -24,34 +24,22 @@ Clients first get a PlayerID from the Player service, then join a session using 
 
 ### 1. `SessionsController`
 
-Manages the lifecycle of game sessions.
-
-- **Responsibilities**:
-
-  - Creating new game sessions.
-  - Retrieving session details.
-  - Adding/removing players from the lobby.
-  - Starting the game (transitioning from lobby to active game state).
+- Creating new game sessions.
+- Retrieving session details.
+- Adding/removing players from the lobby.
+- Starting the game (transitioning from lobby to active game state).
 
 ### 2. `PlayersController`
 
-Handles player management.
-
-- **Responsibilities**:
-
-  - Creating, retrieving, updating, and deleting player profiles.
-  - Used primarily for initial player setup before joining sessions.
-  - The created PlayerID GUID is the primary key used by the client to identify the player while making subsequent API requests.
+- Creating, retrieving, updating, and deleting player profiles.
+- Used primarily for initial player setup before joining sessions.
+- The created PlayerID GUID is the primary key used by the client to identify the player while making subsequent API requests.
 
 ### 3. `GameBoardsController`
 
-Manages gameplay functions.
-
-- **Responsibilities**:
-
-  - Retrieving the current `GameState` for a specific session.
-  - Handling player actions (Rolling dice, Buying property, Placing track, etc.).
-  - Handling trade offers and responses.
+- Retrieving the current `GameState` for a specific session.
+- Handling player actions (Rolling dice, Buying property, Placing track, etc.).
+- Handling trade offers and responses.
 
 ## Rule Engine
 

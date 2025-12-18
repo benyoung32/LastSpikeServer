@@ -548,12 +548,18 @@ namespace GameplaySessionTracker.GameRules
             // to purchase the tile theyve landed on 
             var landedOn = GameConstants.Spaces[state.Players[state.CurrentPlayerId].BoardPosition];
 
+            if (state.IsGameOver)
+            {
+                return [];
+            }
+
             // players can always roll or trade at the start of their turn
             if (state.TurnPhase == TurnPhase.Start)
             {
                 return [ActionType.Roll, ActionType.TradeOffer];
             }
 
+            // TODO: The Buy option should only be available if the player has enough money to purchase the tile they've landed on
             return landedOn.Type switch
             {
                 SpaceType.Land => [ActionType.Buy, ActionType.Pass, ActionType.TradeOffer],

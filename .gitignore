@@ -9,7 +9,7 @@ GameplaySessionTracker/.vscode/**
 .vs/**
 .agent/**
 .vscode/**
-
+GameplaySessionTracker/Properties/**
 Protect sensitive configuration files
 **/appsettings.Production.json
 **/appsettings.*.json

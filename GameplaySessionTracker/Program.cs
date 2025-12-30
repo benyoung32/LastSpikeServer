@@ -35,8 +35,12 @@ builder.Services.AddSingleton<ISessionRepository>(
     sp => new SessionRepository(connectionString));
 builder.Services.AddSingleton<IPlayerRepository>(
     sp => new PlayerRepository(connectionString));
+
+builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IGameBoardRepository>(
-    sp => new GameBoardRepository(connectionString));
+    sp => new GameBoardRepository(
+        connectionString,
+        sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>()));
 
 // Register services as Singletons
 builder.Services.AddSingleton<ISessionService, SessionService>();

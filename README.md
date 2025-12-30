@@ -6,9 +6,16 @@ The backend server for the "Last Spike" board game, built with ASP.NET Core. Thi
 
 The goal behind this project was to recreate one of my favorite board games, The Last Spike 1976, inside a web application so that I could play the game with friends from far away. The classic Canadian board game is a monopoly-type game where players compete to hoard properties and money while building the transcontinental railroad across Canada. The ultimate goal of each player is to have the most money when the last spike of the rail connecting Vancouver and Montreal is driven.
 
-## Setup
+## Technologies
 
-The project is built with .NET 9.0
+- .NET 9.0
+- SQL Server
+- SignalR
+- Dapper
+- Swagger
+- Deployed on Azure Web Apps
+
+## Setup
 
 The project can be run locally with `dotnet run` from the GameplaySessionTracker directory. A SQL database is required, which can be initialized using the CreateSchema.sql file in the SQL folder. The connection string can be set inside the appsettings.json file.
 

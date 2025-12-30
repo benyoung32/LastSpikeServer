@@ -2,8 +2,6 @@ using GameplaySessionTracker.Models;
 using GameplaySessionTracker.Services;
 using Microsoft.AspNetCore.Mvc;
 using GameplaySessionTracker.GameRules;
-using System.Security.Cryptography;
-using Microsoft.VisualBasic;
 
 namespace GameplaySessionTracker.Controllers
 {
@@ -14,7 +12,7 @@ namespace GameplaySessionTracker.Controllers
             ISessionService sessionService)
         : ControllerBase
     {
-        private MD5 md5 = MD5.Create();
+        // private MD5 md5 = MD5.Create();
         [HttpGet]
         public async Task<ActionResult<IEnumerable<GameBoard>>> GetAll()
         {

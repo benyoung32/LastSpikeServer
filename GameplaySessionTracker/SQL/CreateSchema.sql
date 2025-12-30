@@ -25,13 +25,13 @@ GO
 
 
 -- Create LastSpike database
-IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'LastSpike')
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'TheLastSpike2')
 BEGIN
     CREATE DATABASE LastSpike;
 END
 GO
 
-USE LastSpike;
+USE TheLastSpike2;
 GO
 
 -- -- Create GameBoards table

@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using GameplaySessionTracker.Models;
 
 namespace GameplaySessionTracker.Repositories

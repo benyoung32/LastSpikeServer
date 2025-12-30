@@ -382,8 +382,13 @@ namespace GameplaySessionTracker.GameRules
 
         #region Helpers
 
-        public static bool IsTradeValid(GameState state, Trade trade)
+        public static bool IsTradeValid(GameState state, Trade? trade)
         {
+            if (trade == null)
+            {
+                return false;
+            }
+
             var player1 = state.Players[trade.Player1Id];
             var player2 = state.Players[trade.Player2Id];
 

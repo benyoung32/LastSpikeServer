@@ -392,10 +392,10 @@ namespace GameplaySessionTracker.GameRules
             var player1 = state.Players[trade.Player1Id];
             var player2 = state.Players[trade.Player2Id];
 
-            if (player1.Money < trade.Player1Money || player2.Money < trade.Player2Money)
-            {
-                return false;
-            }
+            // if (player1.Money < trade.Player1Money || player2.Money < trade.Player2Money)
+            // {
+            //     return false;
+            // }
 
             foreach (var property in trade.Properties)
             {

@@ -5,10 +5,11 @@ using System.Linq;
 using Dapper;
 using GameplaySessionTracker.Models;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace GameplaySessionTracker.Repositories
 {
-    public class SessionRepository(string connectionString) : ISessionRepository
+    public class SessionRepository(string connectionString, IMemoryCache cache) : ISessionRepository
     {
         private SqlConnection CreateConnection() => new(connectionString);
 
@@ -37,6 +38,12 @@ namespace GameplaySessionTracker.Repositories
 
         public async Task<SessionData?> GetById(Guid id)
         {
+            var cacheKey = $"Session_{id}";
+            if (cache.TryGetValue(cacheKey, out SessionData? cachedSession))
+            {
+                return cachedSession;
+            }
+
             using var connection = CreateConnection();
             var sql = @"
                 SELECT * FROM Sessions WHERE Id = @Id;
@@ -49,6 +56,11 @@ namespace GameplaySessionTracker.Repositories
             {
                 var playerIds = (await multi.ReadAsync<Guid>()).ToList();
                 session.PlayerIds = playerIds;
+
+                cache.Set(cacheKey, session, new MemoryCacheEntryOptions
+                {
+                    SlidingExpiration = TimeSpan.FromMinutes(15)
+                });
             }
 
             return session;
@@ -75,6 +87,12 @@ namespace GameplaySessionTracker.Repositories
                 }
 
                 transaction.Commit();
+
+                var cacheKey = $"Session_{session.Id}";
+                cache.Set(cacheKey, session, new MemoryCacheEntryOptions
+                {
+                    SlidingExpiration = TimeSpan.FromMinutes(15)
+                });
             }
             catch
             {
@@ -107,6 +125,12 @@ namespace GameplaySessionTracker.Repositories
                 }
 
                 transaction.Commit();
+
+                var cacheKey = $"Session_{session.Id}";
+                cache.Set(cacheKey, session, new MemoryCacheEntryOptions
+                {
+                    SlidingExpiration = TimeSpan.FromMinutes(15)
+                });
             }
             catch
             {
@@ -119,6 +143,9 @@ namespace GameplaySessionTracker.Repositories
         {
             using var connection = CreateConnection();
             await connection.ExecuteAsync("DELETE FROM Sessions WHERE Id = @Id", new { Id = id });
+
+            var cacheKey = $"Session_{id}";
+            cache.Remove(cacheKey);
         }
 
         public async Task<IEnumerable<Player>> GetSessionPlayers(Guid sessionId)

@@ -32,9 +32,13 @@ string connectionString = (builder.Environment.IsDevelopment()
 
 // Register repositories as Singletons with connection string
 builder.Services.AddSingleton<ISessionRepository>(
-    sp => new SessionRepository(connectionString));
+    sp => new SessionRepository(
+        connectionString,
+        sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>()));
 builder.Services.AddSingleton<IPlayerRepository>(
-    sp => new PlayerRepository(connectionString));
+    sp => new PlayerRepository(
+        connectionString,
+        sp.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>()));
 
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<IGameBoardRepository>(

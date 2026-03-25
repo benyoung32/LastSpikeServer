@@ -364,7 +364,7 @@ namespace GameplaySessionTracker.GameRules
 
             foreach (var tradedProp in trade.Properties)
             {
-                state.Properties.Remove(state.Properties.Find(p => p.Owner_PID == tradedProp.Owner_PID)!);
+                state.Properties.Remove(state.Properties.Find(p => p.Owner_PID == tradedProp.Owner_PID && p.City == tradedProp.City)!);
                 state.Properties.Add(tradedProp with
                 {
                     Owner_PID = tradedProp.Owner_PID == trade.Player1Id ? trade.Player2Id : trade.Player1Id
@@ -437,6 +437,18 @@ namespace GameplaySessionTracker.GameRules
             // and add the new property to the game state
             state.Properties.Add(new Property(deck[new Random().Next(deck.Count)], state.CurrentPlayerId));
             return state;
+        }
+
+        private static bool IsDeckEmpty(GameState state)
+        {
+            foreach (City city in Enum.GetValues<City>())
+            {
+                if (state.Properties.Count(p => p.City == city) < 5)
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         private static GameState DiceRoll(GameState state)
@@ -565,7 +577,7 @@ namespace GameplaySessionTracker.GameRules
             }
 
             // TODO: The Buy option should only be available if the player has enough money to purchase the tile they've landed on
-            return landedOn.Type switch
+            List<ActionType> actions = landedOn.Type switch
             {
                 SpaceType.Land => [ActionType.Buy, ActionType.Pass, ActionType.TradeOffer],
                 SpaceType.Track when state.TurnPhase == TurnPhase.SpaceOption => [ActionType.Buy, ActionType.TradeOffer],
@@ -579,10 +591,20 @@ namespace GameplaySessionTracker.GameRules
                 SpaceType.RoadbedCosts => [ActionType.Ok],
                 SpaceType.Go => [ActionType.Ok],
                 SpaceType.Scandal => [ActionType.Ok],
-                _ => throw new ArgumentException("Invalid space type")
+                _ => []
             };
 
+            if (actions.Count == 0)
+            {
+                throw new Exception("No valid actions found");
+            }
 
+            if (actions.Contains(ActionType.Buy) && state.Players[state.CurrentPlayerId].Money < landedOn.Cost)
+            {
+                actions.Remove(ActionType.Buy);
+            }
+
+            return actions;
         }
 
         private static bool IsGameOver(GameState state)
